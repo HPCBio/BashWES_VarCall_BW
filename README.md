@@ -1,4 +1,4 @@
-October 2016
+January 2017
 
 1 Pipeline architecture and function
 ====================================

@@ -1,4 +1,5 @@
-h1. Changelog
+Changelog
+=========
 
 June 22, 2016:
 - The tool SNVMix is not used, so removed from the run fil
