@@ -32,6 +32,14 @@ Under the hood, this pipeline splits and merges files at different stages to ach
 
 Figure 2: Pipeline details. Note: the processing can be split by individual sequences in the reference FASTA file, which could be individual chromosomes, scaffolds, contigs, etc.
 
+1.2. Workflow assumptions
+
+- Inputs are fastq not bam (the RESORTBAM os not active)
+- Temporary files are not removed (the REMOVETEMPFILES is not active)
+- The AnisimovLauncher is not used in this workflow
+- To allow for adapter trimming using trimmomatic, the following variables are needed in the runfile: SAMPLEINFORMATION, OUTPUTDIR, TMPDIR, ADAPTERS, FASTQCDIR, TRIMMOMATICDIR, in addition to PBS torque parameters: PBSCORES, PBSNODES, PBSQUEUE, PBSWALLTIME and EMAIL
+
+
 2 Dependencies
 ==============
 
