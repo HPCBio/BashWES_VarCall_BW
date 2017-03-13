@@ -1,0 +1,15 @@
+Completed: 1798088K bytes transferred in 75 seconds
+ (195323K bits/sec), in 1 file.
+2017-03-10T16:09:38 fastq-dump.2.8.1: KClientHttpOpen - connected to www.ncbi.nlm.nih.gov 
+2017-03-10T16:09:39 fastq-dump.2.8.1: KClientHttpOpen - verifying CA cert 
+2017-03-10T16:09:39 fastq-dump.2.8.1: KClientHttpOpen - connected to sra-download.ncbi.nlm.nih.gov 
+2017-03-10T16:09:39 fastq-dump.2.8.1: KClientHttpOpen - connected to sra-download.ncbi.nlm.nih.gov 
+2017-03-10T16:09:39 fastq-dump.2.8.1: KClientHttpOpen - verifying CA cert 
+2017-03-10T16:09:39 fastq-dump.2.8.1: KClientHttpOpen - connected to www.ncbi.nlm.nih.gov 
+2017-03-10T16:09:40 fastq-dump.2.8.1: KClientHttpOpen - verifying CA cert 
+2017-03-10T16:09:40 fastq-dump.2.8.1: KClientHttpOpen - connected to sra-download.ncbi.nlm.nih.gov 
+2017-03-10T16:09:40 fastq-dump.2.8.1: KClientHttpOpen - connected to sra-download.ncbi.nlm.nih.gov 
+2017-03-10T16:09:40 fastq-dump.2.8.1: KClientHttpOpen - verifying CA cert 
+Rejected 117393 READS because READLEN < 1
+Read 24198685 spots for /dev/shm/sra_files/sra/SRR3477517.sra
+Written 24198685 spots for /dev/shm/sra_files/sra/SRR3477517.sra
