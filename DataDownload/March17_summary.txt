@@ -6,8 +6,9 @@ Here's what already works:
 
 - We can get the fastq files by using fastq-dump to convert from sra to fastq
     - We can scale up to three simultaneous conversions on sra files around 3 GB, but after that the
-      rate at which the refseq (the reference database) files are opened and closes appears to put a
-      strain on the system and slows things down significantly
+      rate at which the refseq (the reference database) files are opened and closed appears to put a
+      strain on the system and slows things down significantly (from around 1 hour for 3 samples, to
+      almost 4 hours for 8).
 
 
 ##############################
