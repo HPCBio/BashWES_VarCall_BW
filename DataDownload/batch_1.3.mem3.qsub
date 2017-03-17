@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -N sra_test3RAM3
+#PBS -l walltime=3:00:00
+#PBS -l nodes=1:ppn=32
+#PBS -A baib
+#PBS -q normal
+
+echo `date`
+
+aprun -n 1 -N 1 mkdir -p /dev/shm/sra_files/
+aprun -n 1 -N 1 cp -R /projects/sciteam/baib/InputData_DoNotTouch/localDB/refseq /dev/shm/sra_files/refseq
+
+# Make a symlink from RAM to where the SRAs will be stored
+aprun -n 1 -N 1 ln -sf /projects/sciteam/baib/InputData_DoNotTouch/SRA_files/sra /dev/shm/sra_files/sra
+
+# Temp thing to try and figure out what is going on
+aprun -n 1 -N 1 ls -laR /dev/shm/sra_files &> /projects/sciteam/baib/InputData_DoNotTouch/qsubScripts/batch_1.3.mem3.list_log
+aprun -n 1 -N 1 ls -laR /projects/sciteam/baib/InputData_DoNotTouch/SRA_files &> /projects/sciteam/baib/InputData_DoNotTouch/qsubScripts/batch_1.3.mem3.list_sra_log
+
+aprun -n 4 ~anisimov/scheduler/scheduler.x /projects/sciteam/baib/InputData_DoNotTouch/jobLists/batch1_3_JobList.txt /bin/bash &> /projects/sciteam/baib/InputData_DoNotTouch/qsubScripts/batch_1.3.mem3.log
+
+echo `date`

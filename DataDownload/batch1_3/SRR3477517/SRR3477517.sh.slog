@@ -1,0 +1,10 @@
+2017-03-16T17:46:18 fastq-dump.2.8.1: KClientHttpOpen - connected to www.ncbi.nlm.nih.gov 
+2017-03-16T17:46:18 fastq-dump.2.8.1: KClientHttpOpen - verifying CA cert 
+2017-03-16T17:46:18 fastq-dump.2.8.1: KClientHttpOpen - connected to sra-download.ncbi.nlm.nih.gov 
+2017-03-16T17:46:18 fastq-dump.2.8.1: KClientHttpOpen - connected to sra-download.ncbi.nlm.nih.gov 
+2017-03-16T17:46:18 fastq-dump.2.8.1: KClientHttpOpen - verifying CA cert 
+2017-03-16T17:46:19 fastq-dump.2.8.1: KClientHttpOpen - connected to www.ncbi.nlm.nih.gov 
+2017-03-16T17:46:19 fastq-dump.2.8.1: KClientHttpOpen - verifying CA cert 
+2017-03-16T17:46:19 fastq-dump.2.8.1: KClientHttpOpen - connected to sra-download.ncbi.nlm.nih.gov 
+2017-03-16T17:46:19 fastq-dump.2.8.1: KClientHttpOpen - connected to sra-download.ncbi.nlm.nih.gov 
+2017-03-16T17:46:19 fastq-dump.2.8.1: KClientHttpOpen - verifying CA cert 

@@ -1,0 +1,17 @@
+/projects/sciteam/baib/InputData_DoNotTouch/SRA_files:
+total 120
+drwxr-sr-x   3 jacobrh  ILL_baib   4096 Mar 10 09:51 .
+drwxrws---+ 12 lmainzer ILL_baib   4096 Mar 13 08:38 ..
+-rw-r--r--   1 jacobrh  ILL_baib    985 Mar  1 17:03 download_parallel_wrapper.sh
+-rw-r--r--   1 jacobrh  ILL_baib    561 Mar  1 16:53 download_refseqs_parallel.py
+-rw-r--r--   1 jacobrh  ILL_baib 102284 Mar  1 16:10 list_all_refseqs.txt
+drwxr-sr-x   2 jacobrh  ILL_baib   4096 Mar 16 12:06 sra
+
+/projects/sciteam/baib/InputData_DoNotTouch/SRA_files/sra:
+total 7018760
+drwxr-sr-x 2 jacobrh ILL_baib       4096 Mar 16 12:06 .
+drwxr-sr-x 3 jacobrh ILL_baib       4096 Mar 10 09:51 ..
+-rw-r--r-- 1 jacobrh ILL_baib 1841242272 Mar 16 10:15 SRR3477517.sra
+-rw-r--r-- 1 jacobrh ILL_baib 3351903399 Mar 16 10:15 SRR3477521.sra
+-rw-r--r-- 1 jacobrh ILL_baib 1994031136 Mar 16 10:14 SRR3477523.sra
+Application 55437896 resources: utime ~0s, stime ~1s, Rss ~28208, inblocks ~5415, outblocks ~212
