@@ -1,3 +1,10 @@
+We figured it out!!!
+The problem was that one the normal BW nodes have a 32 Gb limit in the /tmp (or /dev/shm) directories.
+  If we submit with the PBS flag '-l feature=xehimem' to submit the job to the nodes with larger
+  available RAM
+
+#############################
+
 Here's what already works:
 
 - We can download the SRA files very quickly using Aspera
@@ -101,6 +108,5 @@ echo `date`
 /projects/sciteam/baib/builds/sra-toolkit/sra-tools-2.8.1-3/bin/fastq-dump -v --gzip --split-files -O /projects/sciteam/baib/InputData_DoNotTouch/fastq_files /dev/shm/sra_files/sra/SRR3477517.sra
 
 #######
-
 
 
