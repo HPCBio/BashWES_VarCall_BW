@@ -1,0 +1,15 @@
+1  /projects/sciteam/baib/InputData_DoNotTouch/batches/batch1_3/SRR3477517  /bin/bash SRR3477517.sh > SRR3477517.sh.slog
+3  /projects/sciteam/baib/InputData_DoNotTouch/batches/batch1_3/SRR3477523  /bin/bash SRR3477523.sh > SRR3477523.sh.slog
+2  /projects/sciteam/baib/InputData_DoNotTouch/batches/batch1_3/SRR3477521  /bin/bash SRR3477521.sh > SRR3477521.sh.slog
+2017-03-16T17:53:07 fastq-dump.2.8.1 err: archive file empty while accessing archive file within file system module - failed /dev/shm/sra_files/sra/SRR3477523.sra
+
+=============================================================
+An error occurred during processing.
+A report was generated into the file '/u/sciteam/jacobrh/ncbi_error_report.xml'.
+If the problem persists, you may consider sending the file
+to 'sra@ncbi.nlm.nih.gov' for assistance.
+=============================================================
+
+ERROR: process 3 failed in /projects/sciteam/baib/InputData_DoNotTouch/batches/batch1_3/SRR3477523  /bin/bash SRR3477523.sh > SRR3477523.sh.slog
+[NID 17370] 2017-03-16 12:53:20 Apid 55437965: initiated application termination
+Application 55437965 resources: utime ~369s, stime ~17s, Rss ~423184, inblocks ~1381871, outblocks ~906818
