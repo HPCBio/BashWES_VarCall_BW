@@ -1,0 +1,105 @@
+Here's what already works:
+
+- We can download the SRA files very quickly using Aspera
+    - I believe I know how to feed the private key to acsp so we will be able to fetch the dbGaP stuff
+      when we have the permissions
+
+- We can get the fastq files by using fastq-dump to convert from sra to fastq
+    - We can scale up to three simultaneous conversions on sra files around 3 GB, but after that the
+      rate at which the refseq (the reference database) files are opened and closes appears to put a
+      strain on the system and slows things down significantly
+
+
+##############################
+
+Now, we are trying to put the refseq database into memory before using fastq-dump to prevent repeated
+  access to disk
+
+The problem I am currently having is that fastq-dump is configured with vdb-config to look in one 'root'
+  location for both the refseq folder (where it looks for the reference information) and the sra folder
+  (where it expects the sra files one downloaded to be)
+
+./root_location
+./root_location/refseq
+./root_location/sra
+
+Currently, the layout I am trying is structured like the following:
+
+/dev/shm/sra_files/	# This is the 'root' place that I tell fastq-dump to look into
+
+# At runtime, I try to copy the refseq database (found at .../InputData_DoNotTouch/localDB/refseq)
+#   into /dev/shm/sra_files within the compute node
+
+/dev/shm/sra_files/refseq
+
+# Also at runtime, I try to create a soft link from RAM to the location on disk where the SRA files
+#   should be stored (So as to not keep them in memory)
+
+/dev/shm/sra/files/sra -> /projects/sciteam/baib/InputData_DoNotTouch/SRA_files/sra
+
+# This way, fastq-dump can be configured to look in the right place for both the refseq and sra folders
+
+#############################
+
+The problem is that when I do this, fastq-dump keeps giving errors saying that the SRA file is empty
+  (the error message can be found in 'batch_1.3.mem3.log')
+
+I checked the disk sra location at runtime and verified that the SRA file is not empty, and also verified
+  that the soft link from RAM to the sra disk location is present
+  (Look in 'batch_1.3.mem3.list_sra_log' and 'batch_1.3.mem3.list_log', respectively)
+
+I have tried specifying both the RAM sra location and the disk sra location when telling acsp where to put
+  the downloaded SRA file. I have also provided fastq-dump with just the SRA file name, the full RAM sra location, 
+  and the full disk sra location when telling it where to look for the SRA file. 
+
+None of these things have worked.
+
+###########################
+
+My only thought now may be that I am not creating the soft link/copying the refseq database in a way that all of
+  three of the MPI processes can 'see' on the node.
+
+#####	      #####
+##### MY QSUB #####
+#####	      #####
+
+#!/bin/bash
+#PBS -N sra_test3RAM3
+#PBS -l walltime=3:00:00
+#PBS -l nodes=1:ppn=32
+#PBS -A baib
+#PBS -q normal
+
+echo `date`
+
+aprun -n 1 -N 1 mkdir -p /dev/shm/sra_files/
+aprun -n 1 -N 1 cp -R /projects/sciteam/baib/InputData_DoNotTouch/localDB/refseq /dev/shm/sra_files/refseq
+
+# Make a symlink from RAM to where the SRAs will be stored
+aprun -n 1 -N 1 ln -sf /projects/sciteam/baib/InputData_DoNotTouch/SRA_files/sra /dev/shm/sra_files/sra
+
+# Temp thing to try and figure out what is going on
+aprun -n 1 -N 1 ls -laR /dev/shm/sra_files &> /projects/sciteam/baib/InputData_DoNotTouch/qsubScripts/batch_1.3.mem3.list_log
+aprun -n 1 -N 1 ls -laR /projects/sciteam/baib/InputData_DoNotTouch/SRA_files &> /projects/sciteam/baib/InputData_DoNotTouch/qsubScripts/batch_1.3.mem3.list_sra_log
+
+aprun -n 4 ~anisimov/scheduler/scheduler.x /projects/sciteam/baib/InputData_DoNotTouch/jobLists/batch1_3_JobList.txt /bin/bash &> /projects/sciteam/baib/InputData_DoNotTouch/qsubScripts/batch_1.3.mem3.log
+
+echo `date` 
+
+#####
+##### The joblist points to shell scripts (one for each sample) that look like this
+#####
+
+#!/bin/bash
+
+# Download the SRA file
+~/.aspera/connect/bin/ascp -i ~/.aspera/connect/etc/asperaweb_id_dsa.openssh -k 1 -T -l800m anonftp@ftp.ncbi.nlm.nih.gov:/sra/sra-instant/reads/ByRun/sra/SRR/SRR347/SRR3477517/SRR3477517.sra /dev/shm/sra_files/sra
+
+# fastq-dump was configured to look in /dev/shm/sra_files using vdb-config in SRA toolkit bin folder
+# Convert the SRA into fastq
+/projects/sciteam/baib/builds/sra-toolkit/sra-tools-2.8.1-3/bin/fastq-dump -v --gzip --split-files -O /projects/sciteam/baib/InputData_DoNotTouch/fastq_files /dev/shm/sra_files/sra/SRR3477517.sra
+
+#######
+
+
+
