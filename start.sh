@@ -415,7 +415,7 @@ do
 	echo "#PBS -N alignDedup.$sample" >> $qsub1
 	echo "#PBS -o $TopOutputLogs/log.alignDedup.$sample.ou" >> $qsub1
 	echo "#PBS -e $TopOutputLogs/log.alignDedup.$sample.in" >> $qsub1
-	echo "$scriptdir/align_dedup.sh $runfile $sample $FQ_R1 $FQ_R2 $TopOutputLogs/log.alignDedup.$sample.in $TopOutputLogs/log.alignDedup.$sample.ou $TopOutputLogs/qsub.alignDedup.$sample" >> $qsub1
+	echo "aprun -n $nodes -d $thr $scriptdir/align_dedup.sh $runfile $sample $FQ_R1 $FQ_R2 $TopOutputLogs/log.alignDedup.$sample.in $TopOutputLogs/log.alignDedup.$sample.ou $TopOutputLogs/qsub.alignDedup.$sample" >> $qsub1
 	`chmod a+r $qsub1`               
 	alignjobid=`qsub $qsub1` 
        	`qhold -h u $alignjobid`
@@ -465,7 +465,7 @@ do
 		echo "#PBS -e $TopOutputLogs/log.realVcall.$sample.$chr.in" >> $qsub1
                 echo "#PBS -W depend=afterok:$alnjobid" >> $qsub1
 ################################################# azza: here should only realign/recalibrate!
-		echo "$scriptdir/realign_varcall_by_chr.sh $runfile $sample $chr $TopOutputLogs/log.realVcall.$sample.$chr.in $TopOutputLogs/log.realVcall.$sample.$chr.ou $TopOutputLogs/qsub.realVcall.$sample.$chr" >> $qsub1
+		echo "aprun -n $nodes -d $thr $scriptdir/realign_varcall_by_chr.sh $runfile $sample $chr $TopOutputLogs/log.realVcall.$sample.$chr.in $TopOutputLogs/log.realVcall.$sample.$chr.ou $TopOutputLogs/qsub.realVcall.$sample.$chr" >> $qsub1
 		`chmod a+r $qsub1`               
 		realjobid=`qsub $qsub1` 
 		echo $realjobid >> $TopOutputLogs/pbs.VCALL.$sample
@@ -496,7 +496,7 @@ do
 	   echo "#PBS -e $TopOutputLogs/log.merge.$sample.in" >> $qsub1
            echo "#PBS -W depend=afterok:$vcalljobids" >> $qsub1
 ################################################### azza: here should only be merge_bams of each sample
-	   echo "$scriptdir/merge_vcf.sh $runfile $sample $TopOutputLogs/log.mergeVcf.$sample.in $TopOutputLogs/log.merge.$sample.ou $TopOutputLogs/qsub.merge.$sample" >> $qsub1
+	   echo "aprun -n $nodes -d $thr $scriptdir/merge_vcf.sh $runfile $sample $TopOutputLogs/log.mergeVcf.$sample.in $TopOutputLogs/log.merge.$sample.ou $TopOutputLogs/qsub.merge.$sample" >> $qsub1
 	   `chmod a+r $qsub1`               
 	   mergejobid=`qsub $qsub1` 
 	   echo $mergejobid >> $TopOutputLogs/pbs.summary_dependencies
@@ -534,7 +534,7 @@ done <  $sampleinfo
            echo "#PBS -o $TopOutputLogs/log.jointcall.ou" >> $qsub1
            echo "#PBS -e $TopOutputLogs/log.jointcall.in" >> $qsub1
            echo "#PBS -W depend=afterok:$mergedjobsids" >> $qsub1
-           echo "$scriptdir/joint_vcf.sh $runfile $TopOutputLogs/log.jointcall.in $TopOutputLogs/log.jointcall.ou $TopOutputLogs/qsub.jointcall" >> $qsub1
+           echo "aprun -n $nodes -d $thr $scriptdir/joint_vcf.sh $runfile $TopOutputLogs/log.jointcall.in $TopOutputLogs/log.jointcall.ou $TopOutputLogs/qsub.jointcall" >> $qsub1
            `chmod a+r $qsub1`
            jointcalljobid=`qsub $qsub1`
            echo $jointcalljobid >> $TopOutputLogs/pbs.summary_dependencies
@@ -572,7 +572,7 @@ echo "#PBS -N Summary_vcall" >> $qsub2
 echo "#PBS -o $TopOutputLogs/log.summary.ou" >> $qsub2
 echo "#PBS -e $TopOutputLogs/log.summary.in" >> $qsub2
 echo "#PBS -W depend=afterok:$alljobids " >> $qsub2
-echo "$scriptdir/summary.sh $runfile $TopOutputLogs/log.summary.in $TopOutputLogs/log.summary.ou $TopOutputLogs/qsub.summary" >> $qsub2
+echo "aprun -n $nodes -d $thr $scriptdir/summary.sh $runfile $TopOutputLogs/log.summary.in $TopOutputLogs/log.summary.ou $TopOutputLogs/qsub.summary" >> $qsub2
 `chmod a+r $qsub2`
 lastjobid=`qsub $qsub2`
 echo $lastjobid >> $TopOutputLogs/pbs.SUMMARY
