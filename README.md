@@ -3,23 +3,23 @@ January 2017
 1 Pipeline architecture and function
 ====================================
 
-This pipeline implements the [GATK's best practices](https://software.broadinstitute.org/gatk/best-practices/) for germline variant calling in Whole Genome and Whole Exome Next Generation Sequencing datasets, given a cohort of samples.
+This pipeline implements the [GATK's best practices](https://software.broadinstitute.org/gatk/best-practices/) for germline variant calling in Whole Exome Next Generation Sequencing datasets, given a cohort of samples.
 
 In its latest version, 3.6, the best practices include the stages shown in Figure \[1\] below, which are:
 
 1.  Mapping to the reference genome
-
 2.  Marking duplicates
-
 3.  Base recalibration (BQSR)
-
 4.  Variant calling –----- (processing done per sample)
-
 5.  Joint genotyping –----- (processing done for all samples together)
 
 These stages are implemented in this pipeline, with an optional “Indel Realignment” step (which was recommended in previous GATK best practices &lt; 3.6)
 
-With an optional additional stage of checking the quality of input data and trimming, the pipeline can also be run as: Alignment stage only, Complete variant calling with realignment and Complete variant calling without realignment depending on the user’s ANALYSIS setting.
+With an optional additional stage of checking the quality of input data and trimming, the pipeline can also be run as: 
+* Alignment stage only, 
+* Complete variant calling with realignment, and 
+* Complete variant calling without realignment,
+depending on the user’s ANALYSIS setting.
 
 <span id="_5gqwfmpxrsjj"
 class="anchor"></span>![](./media/image05.png)
