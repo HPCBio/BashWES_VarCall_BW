@@ -9,7 +9,7 @@ DELIVERYFOLDER=<path where summary deliverables from the pipeline are stored. It
 TMPDIR=<path to where temporary files are stored>
 SCRIPTDIR=<path to where the scripts of this repo are stored locally on the machine>
 EMAIL=<email address to send torque notifications to*>
-REPORTTICKET*=<redmine ticket number to send notifications to*>
+REPORTTICKET=<redmine ticket number to send notifications to*>
 
 
 ## choose the run case
