@@ -70,6 +70,13 @@ For this pipeline to work, a number of standard files for calling variants are n
 It is important to note that the reference sequence should be prepared first, following [the GATK’s guidelines](http://gatkforums.broadinstitute.org/wdl/discussion/2798/howto-prepare-a-reference-for-use-with-bwa-and-gatk).
 
 For working with human data, one can download most of the needed files from [the GATK’s resource bundle](http://gatkforums.broadinstitute.org/gatk/discussion/1213/whats-in-the-resource-bundle-and-how-can-i-get-it). Missing from the bundle are the index files for the aligner, which are specific to the tool that would be used for alignment (i.e., bwa or novoalign in this pipeline)
+```
+Location: ftp.broadinstitute.org/bundle/b37
+Username: gsapubftp-anonymous
+Password:
+
+wget -r ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37
+```
 
 To achieve the parallelization of Figure \[2\] in the realignment/recalibration stages, the pipeline needs a separate vcf file for each chromosome/contig, and each should be named as: \*\${chr\_name}.vcf. If working with the GATK bundle, the sample script ([*splitVCF-by-chromosome.sh*](https://github.com/HPCBio/BW_VariantCalling/blob/ParameterSweep/splitVCF-by-chromosome.sh)) can be used to produce the needed files with some minor modifications (mainly, providing the right path to the referencedir, java and GenomeAnalysisTK.jar)
 
