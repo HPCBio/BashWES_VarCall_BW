@@ -295,7 +295,6 @@ echo "#PBS -q $queue" >> $generic_qsub_header
 echo "#PBS -A $allocation" >> $generic_qsub_header
 echo "#PBS -m ae" >> $generic_qsub_header
 echo "#PBS -M $email" >> $generic_qsub_header
-echo "#PBS -l nodes=$nodes:ppn=$thr" >> $generic_qsub_header
 echo "#PBS -l walltime=${pbswalltime}" >> $generic_qsub_header
 
 set +x
@@ -334,6 +333,9 @@ echo -e "#####  Alignment-dedup analysis: one qsub per sample                   
 echo -e "#####  Realignment-recalibration-variantCalling: 25 qsubs per sample, one per chr   ####" >&2
 echo -e "########################################################################################\n\n" >&2
 set -x
+
+`truncate -s 0 $TopOutputLogs/Anisimov.alignDedup.joblist`
+`chmod ug=rw $TopOutputLogs/Anisimov.alignDedup.joblist`
 
 while read sampleLine
 do
@@ -392,164 +394,193 @@ do
 	echo -e "########################################################################################\n\n" >&2
 	set -x
 
-	if [ -d $outputdir/$sample ]
+	if [ -d $outputdir/${sample} ]
 	then
 	     ### $outputdir/$sample already exists. Resetting it now. 
 	     ### Maybe not. We already run trimming and we want to keep those results
 	     ### rm -R $outputdir/$sample
-	     mkdir -p $outputdir/$sample/align
-	     mkdir -p $outputdir/$sample/realign
-	     mkdir -p $outputdir/$sample/variant
-	     mkdir -p $outputdir/$deliverydir/$sample
+	     mkdir -p $outputdir/${sample}/align
+	     mkdir -p $outputdir/${sample}/realign
+	     mkdir -p $outputdir/${sample}/variant
+	     mkdir -p $outputdir/$deliverydir/${sample}
+	     mkdir -p $TopOutputLogs/${sample}
 	else 
-	     mkdir -p $outputdir/$sample/align
-	     mkdir -p $outputdir/$sample/realign
-	     mkdir -p $outputdir/$sample/variant
-	     mkdir -p $outputdir/$deliverydir/$sample	     
+	     mkdir -p $outputdir/${sample}/align
+	     mkdir -p $outputdir/${sample}/realign
+	     mkdir -p $outputdir/${sample}/variant
+	     mkdir -p $outputdir/$deliverydir/${sample}	     
+	     mkdir -p $TopOutputLogs/${sample}
 	fi
 	
 	set +x
 	echo -e "\n\n########################################################################################" >&2               
-	echo -e "####   Launching Alignment script for SAMPLE $sample with R1=$FQ_R1 R2=$FQ_R2     ##########" >&2
+	echo -e "####   Creating alignment script for SAMPLE ${sample} with R1=$FQ_R1 R2=$FQ_R2     ##########" >&2
 	echo -e "########################################################################################\n\n" >&2
 	set -x
 
-	qsub1=$TopOutputLogs/qsub.alignDedup.$sample
-	cat $generic_qsub_header > $qsub1
-	echo "#PBS -N alignDedup.$sample" >> $qsub1
-	echo "#PBS -o $TopOutputLogs/log.alignDedup.$sample.ou" >> $qsub1
-	echo "#PBS -e $TopOutputLogs/log.alignDedup.$sample.in" >> $qsub1
-	echo "aprun -n $nodes -d $thr $scriptdir/align_dedup.sh $runfile $sample $FQ_R1 $FQ_R2 $TopOutputLogs/log.alignDedup.$sample.in $TopOutputLogs/log.alignDedup.$sample.ou $TopOutputLogs/qsub.alignDedup.$sample" >> $qsub1
-	`chmod a+r $qsub1`               
-	alignjobid=`qsub $qsub1` 
-       	`qhold -h u $alignjobid`
-	echo $alignjobid >> $TopOutputLogs/pbs.ALIGN
-	echo $alignjobid >> $TopOutputLogs/pbs.summary_dependencies
-	echo `date`
+	echo "$scriptdir/align_dedup.sh $runfile ${sample} $FQ_R1 $FQ_R2 $TopOutputLogs/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.align_dedup.${sample}" > $TopOutputLogs/${sample}/command.align_dedup.${sample}
+        `chmod ug=rwx $TopOutputLogs/${sample}/command.align_dedup.${sample}`
 
-       	if [ `expr ${#alignjobid}` -lt 1 ]
-        then
-	     MSG="unable to launch qsub align job for $sample. Exiting now"
-	     echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"                     
-	     exit 1        
-	        
-        fi
-	
- 	set +x
-	echo -e "\n\n#######  this jobid=$alignjobid will be used to hold execution of realign_varcall.sh     ########\n\n" >&2
-	set -x	
+        echo "$TopOutputLogs/${sample} command.align_dedup.${sample}" >> $TopOutputLogs/Anisimov.alignDedup.joblist
+        (( inputsamplecounter++ )) # was not initiated above, so starts at zero
+   fi # end non-empty line
 
-	if [ $analysis == "ALIGNMENT" -o $analysis == "ALIGN" -o $analysis == "ALIGN_ONLY" ]
-        then
-		set +x; echo -e "\n ###### ANALYSIS = $analysis ends here. Wrapping up and quitting\n" >&2; set -x;
-	            # release all held jobs
-        	    `qrls -h u $alignjobid`
-        else
-	   set +x
-	   echo -e "\n\n########################################################################################" >&2         
-	   echo -e "####   Next loop2 for Launching Realign-Vcall script for SAMPLE $sample on all chr     #####" >&2
-	   echo -e "########################################################################################\n\n" >&2
-	   set -x
-           alnjobid=$( echo $alignjobid | cut -d '.' -f 1 )
-        
-	   truncate -s 0 $TopOutputLogs/pbs.VCALL.$sample
-	
-           for chr in $indices
-           do
-		set +x
-		echo -e "\n\n########################################################################################" >&2 
-		echo -e "####   Realign-Vcall script for SAMPLE $sample chr=$chr                              #######" >&2
-		echo -e "########################################################################################\n\n" >&2
-		set -x
-
-		qsub1=$TopOutputLogs/qsub.realVcall.$sample.$chr
-		cat $generic_qsub_header > $qsub1
-		echo "#PBS -N realVcall.$sample.$chr" >> $qsub1
-		echo "#PBS -o $TopOutputLogs/log.realVcall.$sample.$chr.ou" >> $qsub1
-		echo "#PBS -e $TopOutputLogs/log.realVcall.$sample.$chr.in" >> $qsub1
-                echo "#PBS -W depend=afterok:$alnjobid" >> $qsub1
-################################################# azza: here should only realign/recalibrate!
-		echo "aprun -n $nodes -d $thr $scriptdir/realign_varcall_by_chr.sh $runfile $sample $chr $TopOutputLogs/log.realVcall.$sample.$chr.in $TopOutputLogs/log.realVcall.$sample.$chr.ou $TopOutputLogs/qsub.realVcall.$sample.$chr" >> $qsub1
-		`chmod a+r $qsub1`               
-		realjobid=`qsub $qsub1` 
-		echo $realjobid >> $TopOutputLogs/pbs.VCALL.$sample
-		echo `date`
-		
-		if [ `expr ${#realjobid}` -lt 1 ]
-		then
-		     MSG="unable to launch qsub realign job for $sample. Exiting now"
-		     echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"                     
-		     exit 1        
-		fi
-
-           done
-           set +x  
-	   echo -e "\n\n########################################################################################" >&2            
-	   echo -e "####   Out of loop2. Now launching merge_vcf script for SAMPLE $sample       ##########" >&2
-	   echo -e "########################################################################################\n\n" >&2
-	   set -x 
-
-           vcalljobids=$( cat $TopOutputLogs/pbs.VCALL.$sample | sed "s/\.[a-z]*//g" | tr "\n" ":" )
-
-	   echo -e "\n\n### this list of jobids=[$vcalljobids] will be used to hold execution of merge_vcf.sh #####\n\n"
-
-	   qsub1=$TopOutputLogs/qsub.merge.$sample
-	   cat $generic_qsub_header > $qsub1
-	   echo "#PBS -N merge.$sample" >> $qsub1
-	   echo "#PBS -o $TopOutputLogs/log.merge.$sample.ou" >> $qsub1
-	   echo "#PBS -e $TopOutputLogs/log.merge.$sample.in" >> $qsub1
-           echo "#PBS -W depend=afterok:$vcalljobids" >> $qsub1
-################################################### azza: here should only be merge_bams of each sample
-	   echo "aprun -n $nodes -d $thr $scriptdir/merge_vcf.sh $runfile $sample $TopOutputLogs/log.mergeVcf.$sample.in $TopOutputLogs/log.merge.$sample.ou $TopOutputLogs/qsub.merge.$sample" >> $qsub1
-	   `chmod a+r $qsub1`               
-	   mergejobid=`qsub $qsub1` 
-	   echo $mergejobid >> $TopOutputLogs/pbs.summary_dependencies
-	   echo `date`
-	
-           if [ `expr ${#mergejobid}` -lt 1 ]
-              then
-	        MSG="unable to launch qsub merge job for $sample. Exiting now"
-	        echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email" 
-	        exit 1        
-           fi
-#azza: here should be calling variants using HC
-
-        fi # close the if statement checking whether the workflow end with alignment or not
-        # release all held jobs
-        `qrls -h u $alignjobid`
-   fi  # end non-empty line
 done <  $sampleinfo	
 
+
+# calculate the number of nodes needed, to be numbers of samples +1
+numalignnodes=$((inputsamplecounter+1))
+
+#form qsub
+alignqsub=$TopOutputLogs/qsub.alignDedup
+cat $generic_qsub_header > $alignqsub
+
+echo "#PBS -N alignDedup" >> $alignqsub
+echo "#PBS -o $TopOutputLogs/log.alignDedup.ou" >> $alignqsub
+echo "#PBS -e $TopOutputLogs/log.alignDedup.er" >> $alignqsub
+echo "#PBS -l nodes=${numalignnodes}:ppn=$thr" >> $alignqsub
+echo -e "\n" >> $alignqsub
+echo "aprun -n $numalignnodes -N 1 -d $thr ~anisimov/scheduler/scheduler.x $TopOutputLogs/Anisimov.alignDedup.joblist /bin/bash > ${TopOutputLogs}/Anisimov.alignDedup.log" >> $alignqsub
+`chmod ug=r ${TopOutputLogs}/Anisimov.alignDedup.log`
+`chmod ug=rw $alignqsub`               
+alignjobid=`qsub $alignqsub` 
+`qhold -h u $alignjobid`
+echo $alignjobid >> $TopOutputLogs/pbs.ALIGN
+echo $alignjobid >> $TopOutputLogs/pbs.summary_dependencies
+echo `date`
+
+if [ `expr ${#alignjobid}` -lt 1 ]
+then
+   MSG="unable to launch qsub align job for ${sample}. Exiting now"
+   echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"                     
+   exit 1        
+    
+fi
+	
+# 	set +x
+#	echo -e "\n\n#######  this jobid=$alignjobid will be used to hold execution of realign_varcall.sh     ########\n\n" >&2
+#	set -x	
+#
+#	if [ $analysis == "ALIGNMENT" -o $analysis == "ALIGN" -o $analysis == "ALIGN_ONLY" ]
+#        then
+#		set +x; echo -e "\n ###### ANALYSIS = $analysis ends here. Wrapping up and quitting\n" >&2; set -x;
+#	            # release all held jobs
+#        	    `qrls -h u $alignjobid`
+#        else
+#	   set +x
+#	   echo -e "\n\n########################################################################################" >&2         
+#	   echo -e "####   Next loop2 for Launching Realign-Vcall script for SAMPLE ${sample} on all chr     #####" >&2
+#	   echo -e "########################################################################################\n\n" >&2
+#	   set -x
+#           alnjobid=$( echo $alignjobid | cut -d '.' -f 1 )
+#        
+#	   truncate -s 0 $TopOutputLogs/pbs.VCALL.${sample}
+#	
+#           for chr in $indices
+#           do
+#		set +x
+#		echo -e "\n\n########################################################################################" >&2 
+#		echo -e "####   Realign-Vcall script for SAMPLE ${sample} chr=$chr                              #######" >&2
+#		echo -e "########################################################################################\n\n" >&2
+#		set -x
+#
+#		qsub1=$TopOutputLogs/qsub.realVcall.${sample}.$chr
+#		cat $generic_qsub_header > $qsub1
+#		echo "#PBS -N realVcall.${sample}.$chr" >> $qsub1
+#		echo "#PBS -o $TopOutputLogs/log.realVcall.${sample}.$chr.ou" >> $qsub1
+#		echo "#PBS -e $TopOutputLogs/log.realVcall.${sample}.$chr.in" >> $qsub1
+#                echo "#PBS -W depend=afterok:$alnjobid" >> $qsub1
+#	        echo -e "\n" >> $qsub1
+################################################## azza: here should only realign/recalibrate!
+#		echo "aprun -n $nodes -d $thr $scriptdir/realign_varcall_by_chr.sh $runfile ${sample} $chr $TopOutputLogs/log.realVcall.${sample}.$chr.in $TopOutputLogs/log.realVcall.${sample}.$chr.ou $TopOutputLogs/qsub.realVcall.${sample}.$chr" >> $qsub1
+#		`chmod a+r $qsub1`               
+#		realjobid=`qsub $qsub1` 
+#		echo $realjobid >> $TopOutputLogs/pbs.VCALL.${sample}
+#		echo `date`
+#		
+#		if [ `expr ${#realjobid}` -lt 1 ]
+#		then
+#		     MSG="unable to launch qsub realign job for ${sample}. Exiting now"
+#		     echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"                     
+#		     exit 1        
+#		fi
+#
+#           done
+#           set +x  
+#	   echo -e "\n\n########################################################################################" >&2            
+#	   echo -e "####   Out of loop2. Now launching merge_vcf script for SAMPLE ${sample}       ##########" >&2
+#	   echo -e "########################################################################################\n\n" >&2
+#	   set -x 
+#
+#           vcalljobids=$( cat $TopOutputLogs/pbs.VCALL.${sample} | sed "s/\.[a-z]*//g" | tr "\n" ":" )
+#
+#	   echo -e "\n\n### this list of jobids=[$vcalljobids] will be used to hold execution of merge_vcf.sh #####\n\n"
+#
+#	   qsub1=$TopOutputLogs/qsub.merge.${sample}
+#	   cat $generic_qsub_header > $qsub1
+#	   echo "#PBS -N merge.${sample}" >> $qsub1
+#	   echo "#PBS -o $TopOutputLogs/log.merge.${sample}.ou" >> $qsub1
+#	   echo "#PBS -e $TopOutputLogs/log.merge.${sample}.in" >> $qsub1
+#           echo "#PBS -W depend=afterok:$vcalljobids" >> $qsub1
+#	   echo -e "\n" >> $qsub1
+#################################################### azza: here should only be merge_bams of each sample
+#	   echo "aprun -n $nodes -d $thr $scriptdir/merge_vcf.sh $runfile ${sample} $TopOutputLogs/log.mergeVcf.${sample}.in $TopOutputLogs/log.merge.${sample}.ou $TopOutputLogs/qsub.merge.${sample}" >> $qsub1
+#	   `chmod a+r $qsub1`               
+#	   mergejobid=`qsub $qsub1` 
+#	   echo $mergejobid >> $TopOutputLogs/pbs.summary_dependencies
+#	   echo `date`
+#	
+#           if [ `expr ${#mergejobid}` -lt 1 ]
+#              then
+#	        MSG="unable to launch qsub merge job for ${sample}. Exiting now"
+#	        echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email" 
+#	        exit 1        
+#           fi
+#azza: here should be calling variants using HC
+#
+#        fi # close the if statement checking whether the workflow end with alignment or not
+        # release all held jobs
+#        `qrls -h u $alignjobid`
+#   fi  # end non-empty line
+# OLD done <  $sampleinfo	
+
+############################################################################################################################# azza's GenotypeGVCF
+############################################################################################################################# azza's GenotypeGVCF
+############################################################################################################################# azza's GenotypeGVCF
+############################################################################################################################# azza's GenotypeGVCF
+############################################################################################################################# azza's GenotypeGVCF
+############################################################################################################################# azza's GenotypeGVCF
 ############################################################################################################################# azza's GenotypeGVCF
 
-	   set +x  
-           echo -e "\n\n########################################################################################" >&2
-           echo -e "####    Now launching joint_genotyping script for all SAMPLEs: each 200 together        ##########" >&2
-           echo -e "########################################################################################\n\n" >&2
-           set -x 
-
-           mergedjobsids=$( cat $TopOutputLogs/pbs.summary_dependencies | sed "s/\.[a-z]*//g" | tr "\n" ":" )
-
-           echo -e "\n\n### this list of jobids=[$mergedjobsids] will be used to hold execution of joint_vcfs.sh #####\n\n"
-
-           qsub1=$TopOutputLogs/qsub.jointcall
-           cat $generic_qsub_header > $qsub1
-           echo "#PBS -N JointCalling" >> $qsub1
-           echo "#PBS -o $TopOutputLogs/log.jointcall.ou" >> $qsub1
-           echo "#PBS -e $TopOutputLogs/log.jointcall.in" >> $qsub1
-           echo "#PBS -W depend=afterok:$mergedjobsids" >> $qsub1
-           echo "aprun -n $nodes -d $thr $scriptdir/joint_vcf.sh $runfile $TopOutputLogs/log.jointcall.in $TopOutputLogs/log.jointcall.ou $TopOutputLogs/qsub.jointcall" >> $qsub1
-           `chmod a+r $qsub1`
-           jointcalljobid=`qsub $qsub1`
-           echo $jointcalljobid >> $TopOutputLogs/pbs.summary_dependencies
-           echo `date`
-
-           if [ `expr ${#jointcalljobid}` -lt 1 ]
-              then
-                MSG="unable to launch qsub jointVCFcall job for 200 samples. Exiting now"
-                echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
-                exit 1
-           fi
+#	   set +x  
+#           echo -e "\n\n########################################################################################" >&2
+#           echo -e "####    Now launching joint_genotyping script for all SAMPLEs: each 200 together        ##########" >&2
+#           echo -e "########################################################################################\n\n" >&2
+#           set -x 
+#
+#           mergedjobsids=$( cat $TopOutputLogs/pbs.summary_dependencies | sed "s/\.[a-z]*//g" | tr "\n" ":" )
+#
+#           echo -e "\n\n### this list of jobids=[$mergedjobsids] will be used to hold execution of joint_vcfs.sh #####\n\n"
+#
+#           qsub1=$TopOutputLogs/qsub.jointcall
+#           cat $generic_qsub_header > $qsub1
+#           echo "#PBS -N JointCalling" >> $qsub1
+#           echo "#PBS -o $TopOutputLogs/log.jointcall.ou" >> $qsub1
+#           echo "#PBS -e $TopOutputLogs/log.jointcall.in" >> $qsub1
+#           echo "#PBS -W depend=afterok:$mergedjobsids" >> $qsub1
+#	   echo -e "\n" >> $qsub1
+#           echo "aprun -n $nodes -d $thr $scriptdir/joint_vcf.sh $runfile $TopOutputLogs/log.jointcall.in $TopOutputLogs/log.jointcall.ou $TopOutputLogs/qsub.jointcall" >> $qsub1
+#           `chmod a+r $qsub1`
+#           jointcalljobid=`qsub $qsub1`
+#           echo $jointcalljobid >> $TopOutputLogs/pbs.summary_dependencies
+#           echo `date`
+#
+#           if [ `expr ${#jointcalljobid}` -lt 1 ]
+#              then
+#                MSG="unable to launch qsub jointVCFcall job for 200 samples. Exiting now"
+#                echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+#                exit 1
+#           fi
 
 ################################################################################################################################### end azza's block
 
@@ -570,15 +601,17 @@ set +x
 echo -e "\n\n### this list of jobids=[$alljobids] will be used to hold execution of summary.sh #####\n\n" >&2
 set -x
 
-qsub2=$TopOutputLogs/qsub.summary
-cat $generic_qsub_header > $qsub2
-echo "#PBS -N Summary_vcall" >> $qsub2
-echo "#PBS -o $TopOutputLogs/log.summary.ou" >> $qsub2
-echo "#PBS -e $TopOutputLogs/log.summary.in" >> $qsub2
-echo "#PBS -W depend=afterok:$alljobids " >> $qsub2
-echo "aprun -n $nodes -d $thr $scriptdir/summary.sh $runfile $TopOutputLogs/log.summary.in $TopOutputLogs/log.summary.ou $TopOutputLogs/qsub.summary" >> $qsub2
-`chmod a+r $qsub2`
-lastjobid=`qsub $qsub2`
+summaryqsub=$TopOutputLogs/qsub.summary
+cat $generic_qsub_header > $summaryqsub
+echo "#PBS -N Summary_vcall" >> $summaryqsub
+echo "#PBS -o $TopOutputLogs/log.summary.ou" >> $summaryqsub
+echo "#PBS -e $TopOutputLogs/log.summary.in" >> $summaryqsub
+echo "#PBS -l nodes=1:ppn=$thr" >> $summaryqsub
+echo "#PBS -W depend=afterok:$alljobids " >> $summaryqsub
+echo -e "\n" >> $summaryqsub
+echo "aprun -n $nodes -d $thr $scriptdir/summary.sh $runfile $TopOutputLogs/log.summary.in $TopOutputLogs/log.summary.ou $TopOutputLogs/qsub.summary" >> $summaryqsub
+`chmod a+r $summaryqsub`
+lastjobid=`qsub $summaryqsub`
 echo $lastjobid >> $TopOutputLogs/pbs.SUMMARY
 echo `date`     
 

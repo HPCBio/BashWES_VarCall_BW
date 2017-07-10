@@ -6,7 +6,7 @@ redmine=hpcbio-redmine@igb.illinois.edu
 ##redmine=grendon@illinois.edu
 
 set -x
-if [ $# != 7 ]
+if [ $# != 6 ]
 then
         MSG="Parameter mismatch. Rerun as: $0 <runfile> <SampleName> <read1> <read2> <log.in> <log.ou> <qsub>"
         echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s 'Variant Calling Workflow failure message' "$redmine"
@@ -29,10 +29,9 @@ runfile=$1
 SampleName=$2
 R1=$3
 R2=$4
-elog=$5
-olog=$6
-qsubfile=$7
-LOGS="jobid:${PBS_JOBID}\nqsubfile=$qsubfile\nerrorlog=$elog\noutputlog=$olog"
+log=$5
+command=$6
+LOGS="scriptfile=$scriptfile\nlog=$log\n"
 
 
 if [ ! -s $runfile ]
