@@ -61,6 +61,7 @@ JAVADIR=/home/apps/java/jdk1.8.0_65/bin
 
 
 ## pbs torque resources
+ALLOCATION=<chargeable allocation>
 PBSNODES=<number of nodes>
 PBSCORES=<number of cores>
 PBSQUEUE=<name of the queue>

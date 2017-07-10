@@ -141,6 +141,7 @@ In a nutshell, the template below shows the various parameters and how they can 
   JAVADIR=/home/apps/java/jdk1.8.0\_65/bin
 
 ## pbs torque resources
+  ALLOCATION=<chargeable allocation>
   PBSNODES=<number of nodes>
   PBSCORES=<number of cores>
   PBSQUEUE=<name of the queue>
@@ -183,6 +184,8 @@ The pipeline breaks down the analysis stages on per sample and chromosome basis 
 -   `log.computation\_phase.sample\_name.ou` = Output log for a certain qsub job
 
 -   `pbs.COMPUTATIONSTAGE` = list of jobids for that stage in the workflow (lists together jobs that delineate a major block of computation)
+
+-   `Anisimov.computation.joblist` = Tab separated file specifying output directories and jobs to be run by the Anisimov Launcher
  
 Besides that, it also tracks the execution of the various stages by sending email notification of qsub jobs (the EMAIL parameter in the runfile), and also by reporting a summary of a given run in [redmine](http://www.redmine.org) . In its current implementation, the pipeline will send these to HPCBio’s redmine instance, and the given ticket number (the REPORTTICKET parameter in the runfile)
 
