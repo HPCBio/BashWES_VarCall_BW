@@ -3,14 +3,16 @@
 ################################################################################################ 
 # Program to calculate raw variants from human samples of WES short reads
 # In order to run this pipeline please type at the command line
-# start.sh <runfile>
+# /FULL/PATH/start.sh /FULL/PATH/<runfile>
 ################################################################################################
+
+
 set -x
 redmine=hpcbio-redmine@igb.illinois.edu
 
 if [ $# != 1 ]
 then
-        MSG="Parameter mismatch.\nRerun like this: $0 <runfile>\n"
+        MSG="Parameter mismatch.\nRerun like this: /FULL/PATH/$0 /FULL/PATH/<runfile>\n"
         echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "Variant Calling Workflow failure message" "$redmine"
         exit 1;
 fi
@@ -68,6 +70,7 @@ fastqcdir=$( cat $runfile | grep -w FASTQCDIR | cut -d '=' -f2 )
 thr=$( cat $runfile | grep -w PBSCORES | cut -d '=' -f2 )
 nodes=$( cat $runfile | grep -w PBSNODES | cut -d '=' -f2 )
 queue=$( cat $runfile | grep -w PBSQUEUE | cut -d '=' -f2 )
+allocation=$( cat $runfile | grep -w ALLOCATION | cut -d '=' -f2 )
 pbswalltime=$( cat $runfile | grep -w PBSWALLTIME | cut -d '=' -f2 )
 
 if [ `expr ${#tmpdir}` -lt 1  ]
@@ -289,6 +292,7 @@ generic_qsub_header=$TopOutputLogs/qsubGenericHeader
 truncate -s 0 $generic_qsub_header
 echo "#!/bin/bash" > $generic_qsub_header
 echo "#PBS -q $queue" >> $generic_qsub_header
+echo "#PBS -A $allocation" >> $generic_qsub_header
 echo "#PBS -m ae" >> $generic_qsub_header
 echo "#PBS -M $email" >> $generic_qsub_header
 echo "#PBS -l nodes=$nodes:ppn=$thr" >> $generic_qsub_header
