@@ -418,7 +418,7 @@ do
 	echo -e "########################################################################################\n\n" >&2
 	set -x
 
-	echo "$scriptdir/align_dedup.sh $runfile ${sample} $FQ_R1 $FQ_R2 $TopOutputLogs/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.align_dedup.${sample}" > $TopOutputLogs/${sample}/command.align_dedup.${sample}
+	echo "nohup $scriptdir/align_dedup.sh $runfile ${sample} $FQ_R1 $FQ_R2 $TopOutputLogs/${sample}/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.align_dedup.${sample} > $TopOutputLogs/${sample}/log.alignDedup.${sample}" > $TopOutputLogs/${sample}/command.align_dedup.${sample}
         `chmod ug=rwx $TopOutputLogs/${sample}/command.align_dedup.${sample}`
 
         echo "$TopOutputLogs/${sample} command.align_dedup.${sample}" >> $TopOutputLogs/Anisimov.alignDedup.joblist
