@@ -170,7 +170,7 @@ set +x
 echo -e "\n\n##################################################################################" >&2 
 echo -e "##################################################################################" >&2          
 echo -e "##################################################################################" >&2        
-echo -e "#############   ALIGN-DEDUPPLICATION  FOR SAMPLE $SampleName       ###############" >&2
+echo -e "#############   ALIGN-DEDUPPLICATION  FOR SAMPLE $SampleName                      " >&2
 echo -e "##################################################################################" >&2
 echo -e "##################################################################################" >&2 
 echo -e "##################################################################################\n\n" >&2          
@@ -192,11 +192,11 @@ if [ $markduplicates == "SAMBLASTER" ]
 then
         set +x
 	echo -e "\n\n##################################################################################" >&2
-	echo -e "##CASE1: dedup tool is $markduplciates we use a single command for align-deduplication ##" >&2 
+	echo -e "##  CASE1: dedup tool is $markduplciates we use a single command for align-deduplication" >&2 
 	echo -e "##################################################################################\n\n" >&2
 
 	echo -e "\n\n##################################################################################" >&2
-	echo -e "############# step one: alignment and deduplication                ############" >&2	     
+	echo -e "#############    step one: alignment and deduplication                ############" >&2	     
 	echo -e "##################################################################################\n\n" >&2
 	set -x
 	
@@ -210,11 +210,14 @@ then
 	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"| mail -s "[Task #${reportticket}]" "$redmine,$email"
 	    exit $exitcode;
 	fi
+
+        `chmod 660 ${dedupbam}*`
+
 	        
 	set +x
-	echo -e "\n\n##################################################################################" >&2	     
+	echo -e "\n\n######################################################################################" >&2	     
 	echo -e "#############  step two: making sure that a file was produced with alignments    #####" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "######################################################################################\n\n" >&2
 	set -x
 
 	if [ -s $AlignDir/$dedupbam ]
@@ -250,6 +253,7 @@ then
 
 	$novocraftdir/novosort --index --tmpdir $tmpdir --threads $thr --compression 1 -o $dedupsortedbam $dedupbam
 	exitcode=$?
+        `chmod 660 ${dedupsortedbam}*`
 	echo `date`
 	if [ $exitcode -ne 0 ]
 	then
@@ -259,9 +263,9 @@ then
 	fi
 	
 	set +x
-	echo -e "\n\n##################################################################################" >&2	     
+	echo -e "\n\n#######################################################################################" >&2	     
 	echo -e "#############  step four: making sure that a file was produced with alignments    #####" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "#######################################################################################\n\n" >&2
 	set -x
 
 	if [ -s $AlignDir/$dedupsortedbam ]
@@ -300,12 +304,12 @@ then
 elif  [ $markduplicates == "NOVOSORT" ]
 then
 	set +x
-	echo -e "\n\n##################################################################################" >&2
-	echo -e "CASE2: dedup tool is NOVOSORT. one cmd for align and one for dedup-sort   ########" >&2  
+	echo -e "\n\n######################################################################################" >&2
+	echo -e "####  CASE2: dedup tool is NOVOSORT. one cmd for align and one for dedup-sort  #######" >&2  
 	echo -e "##################################################################################\n\n" >&2
 
-	echo -e "\n\n##################################################################################" >&2	     
-	echo -e "#############  step one: alignment                                 ############" >&2
+	echo -e "\n\n######################################################################################" >&2	     
+	echo -e "#############         step one: alignment                                 ############" >&2
 	echo -e "##################################################################################\n\n" >&2
 	set -x 
         
@@ -316,6 +320,7 @@ then
 
 	   $bwamemdir/bwa mem $bwamem_parms -t $thr -R "${rgheader}" $bwa_index $R1 $R2 | $samtoolsdir/samtools view -@ $thr -bSu -> $alignedbam 
 	   exitcode=$?
+           `chmod 660 ${alignedbam}*`
 	   echo `date`
 	   if [ $exitcode -ne 0 ]
 	   then
@@ -327,6 +332,7 @@ then
 	then
            $novocraftdir/novoalign $novoalign_parms  -c $thr -d ${novoalign_index} -f $R1 $R2 | $samtoolsdir/samtools view -@ $thr -bS - > $alignedbam
            exitcode=$?
+           `chmod 660 ${alignedbam}*`
            echo `date`
            if [ $exitcode -ne 0 ]
            then
@@ -337,7 +343,7 @@ then
         fi   
 	
 	set +x 
-	echo -e "\n\n##################################################################################" >&2	     
+	echo -e "\n\n######################################################################################" >&2	     
 	echo -e "#############  step two:making sure that a file was produced with alignments     #####" >&2
 	echo -e "##################################################################################\n\n" >&2
 	set -x 
@@ -369,14 +375,14 @@ then
 	    exit 1;          
 	fi 
 	set +x      
-	echo -e "\n\n##################################################################################" >&2	     
+	echo -e "\n\n#####################################################################################" >&2	     
 	echo -e "#############  step three: sort + dedup + indexing                       ############" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "#####################################################################################\n\n" >&2
 	set -x
 
 	$novocraftdir/novosort -r "${rgheader}" --markDuplicates  -t $tmpdir -c $thr -i -o $dedupsortedbam $alignedbam
-
 	exitcode=$?
+        `chmod 660 ${dedupsortedbam}*`
 	echo `date`
 	if [ $exitcode -ne 0 ]
 	then
@@ -386,9 +392,9 @@ then
 	fi
  
 	set +x	
-	echo -e "\n\n##################################################################################" >&2	     
+	echo -e "\n\n######################################################################################" >&2	     
 	echo -e "#############  step four: making sure that a file was produced with alignments #######" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "######################################################################################\n\n" >&2
 	set -x
 	
 	if [ -s $AlignDir/$dedupsortedbam ]
@@ -424,17 +430,18 @@ then
 elif  [ $markduplicates == "PICARD" ]
 then
 	set +x
-	echo -e "\n\n##################################################################################" >&2
-	echo -e "CASE2: dedup tool is PICARD. one cmd for align, one for sort, one for dedup   ########" >&2 
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "\n\n########################################################################################" >&2
+	echo -e "####  CASE2: dedup tool is PICARD. one cmd for align, one for sort, one for dedup   ####" >&2 
+	echo -e "########################################################################################\n\n" >&2
 
-	echo -e "\n\n##################################################################################" >&2	     
+	echo -e "\n\n###############################################################################" >&2	     
 	echo -e "#############  step one: alignment                                 ############" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "###############################################################################\n\n" >&2
 	set -x 	
 
 	$bwamemdir/bwa mem $bwamem_parms -t $thr -R "${rgheader}" $bwa_index $R1 $R2 | $samtoolsdir/samtools view -@ $thr -bSu -> $alignedbam 
 	exitcode=$?
+        `chmod 660 ${alignedbam}*`
 	echo `date`
 	if [ $exitcode -ne 0 ]
 	then
@@ -443,9 +450,9 @@ then
 	    exit $exitcode;
 	fi   
 	set +x
-	echo -e "\n\n##################################################################################" >&2	     
+	echo -e "\n\n######################################################################################" >&2	     
 	echo -e "#############  step two:making sure that a file was produced with alignments     #####" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "######################################################################################\n\n" >&2
 	set -x
 
 	if [ -s $AlignDir/$alignedbam ]
@@ -475,14 +482,14 @@ then
 	    exit 1;          
 	fi      
 	set +x 
-	echo -e "\n\n##################################################################################" >&2
+	echo -e "\n\n###################################################################################" >&2
 	echo -e "#############  step three: sort                                        ############" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "###################################################################################\n\n" >&2
 	set -x
 
 	$novocraftdir/novosort -t $tmpdir -c ${thr} -i -o $alignedsortedbam $alignedbam
-
 	exitcode=$?
+        `chmod 660 ${alignedsortedbam}*`
 	echo `date`
 	if [ $exitcode -ne 0 ]
 	then
@@ -492,19 +499,22 @@ then
 	fi 
 
 	set +x
-	echo -e "\n\n##################################################################################" >&2
+	echo -e "\n\n###################################################################################" >&2
 	echo -e "#############  step four: dedup                                        ############" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "###################################################################################\n\n" >&2
 	set -x 
 
 
-$javadir/java -Xmx8g -Djava.io.tmpdir=$tmpdir -jar $picardir/picard.jar  MarkDuplicates \
-INPUT=$alignedsortedbam OUTPUT=$dedupsortedbam TMP_DIR=$tmpdir \
-ASSUME_SORTED=true MAX_RECORDS_IN_RAM=null CREATE_INDEX=true \
-METRICS_FILE=${SampleName}.picard.metrics \
-VALIDATION_STRINGENCY=SILENT
+        $javadir/java -Xmx8g -Djava.io.tmpdir=$tmpdir -jar $picardir/picard.jar  MarkDuplicates \
+           INPUT=$alignedsortedbam OUTPUT=$dedupsortedbam TMP_DIR=$tmpdir \
+           ASSUME_SORTED=true MAX_RECORDS_IN_RAM=null CREATE_INDEX=true \
+           METRICS_FILE=${SampleName}.picard.metrics \
+           VALIDATION_STRINGENCY=SILENT
 
 	exitcode=$?
+        `find . -type d | xargs chmod -R 770`
+        `find . -type f | xargs chmod -R 660`
+
 	echo `date`
 	if [ $exitcode -ne 0 ]
 	then
@@ -514,9 +524,9 @@ VALIDATION_STRINGENCY=SILENT
 	fi 
 
 	set +x	
-	echo -e "\n\n##################################################################################" >&2	     
+	echo -e "\n\n######################################################################################" >&2	     
 	echo -e "#############  step five: making sure that a file was produced with alignments #######" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "######################################################################################\n\n" >&2
 	set -x
 	
 	if [ -s $AlignDir/$dedupsortedbam ]
@@ -548,9 +558,9 @@ VALIDATION_STRINGENCY=SILENT
 
 
         set +x 
-	echo -e "\n\n##################################################################################" >&2
+	echo -e "\n\n#################################################################################" >&2
 	echo -e "#############      END PICARD  BLOCK                                 ############" >&2
-	echo -e "##################################################################################\n\n" >&2
+	echo -e "#################################################################################\n\n" >&2
 	set -x             
 
 	
@@ -572,9 +582,9 @@ echo `date`
 echo -e "\n\n##################################################################################" >&2
 echo -e "##################################################################################" >&2          
 echo -e "##################################################################################" >&2        
-echo -e "########   ALIGNMENT QC TEST   FOR SAMPLE $SampleName              ###############" >&2
-echo -e "########   QC rule1: duplication cutoff <= $dup_cutoff             ###############" >&2
-echo -e "########   QC rule2: mapped_reads cutoff >= $map_cutoff            ###############" >&2
+echo -e "########   ALIGNMENT QC TEST   FOR SAMPLE $SampleName                             " >&2
+echo -e "########   QC rule1: duplication cutoff <= $dup_cutoff                            " >&2
+echo -e "########   QC rule2: mapped_reads cutoff >= $map_cutoff                           " >&2
 echo -e "##################################################################################" >&2
 echo -e "##################################################################################" >&2 
 echo -e "##################################################################################\n\n" >&2
@@ -582,7 +592,7 @@ echo -e "#######################################################################
      
 
 echo -e "\n\n##################################################################################" >&2	     
-echo -e "#############  step one: generating the relevant file with flagstat       ############" >&2
+echo -e "#############  step one: generating the relevant file with flagstat   ############" >&2
 echo -e "##################################################################################\n\n" >&2
 set -x
 
@@ -591,6 +601,9 @@ flagstats=${dedupsortedbam}.flagstats
 echo `date`             
 $samtoolsdir/samtools flagstat $dedupsortedbam > $flagstats
 echo `date`
+`find . -type d | xargs chmod -R 770`
+`find . -type f | xargs chmod -R 660`
+
 
 set +x
 echo -e "\n\n##################################################################################" >&2	     
@@ -607,9 +620,9 @@ then
 fi
 
 set +x
-echo -e "\n\n##################################################################################" >&2	     
+echo -e "\n\n######################################################################################" >&2	     
 echo -e "#############  step three: parsing the file and grabbing stats for the QC test     ###" >&2
-echo -e "##################################################################################\n\n" >&2
+echo -e "######################################################################################\n\n" >&2
 set -x           
 
 
@@ -647,7 +660,7 @@ fi
 
 set +x           
 echo -e "\n\n##################################################################################" >&2	     
-echo -e "#############  step four: calculating stats according to QC rules                  ###" >&2
+echo -e "#############  step four: calculating stats according to QC rules              ###" >&2
 echo -e "##################################################################################\n\n" >&2
 set -x        
 
@@ -676,7 +689,7 @@ else
 fi
 set +x
 echo -e "\n\n##################################################################################" >&2	     
-echo -e "#############  step five: applying the  QC rules                                  ###" >&2
+echo -e "#############  step five: applying the  QC rules                               ###" >&2
 echo -e "##################################################################################\n\n" >&2
 set -x         
 
@@ -720,12 +733,12 @@ set -x
 
 
 MSG="ALIGNMENT-DEDUPLICATION for $SampleName finished successfully"
-echo -e "program=$scriptfile at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+echo -e "program=$scriptfile at line=$LINENO.\nReason=$MSG\n$LOGS" >> ${rootdir}/logs/mail.alignDedup 
 
 echo `date`
 
 set +x
-echo -e "\n\n##################################################################################" >&2
-echo -e "#############    DONE PROCESSING SAMPLE $SampleName. EXITING NOW.  ###############" >&2
-echo -e "##################################################################################\n\n" >&2
+echo -e "\n\n#################################################################################################" >&2
+echo -e "#############    DONE PROCESSING SAMPLE $SampleName. EXITING NOW.  " >&2
+echo -e "#################################################################################################\n\n" >&2
 set -x

@@ -254,8 +254,8 @@ if [ ! -d $outputdir ]; then
 	#rm -rf $outputdir/* #This would actually delete important data if the user did qc & trimming before running vriant calling (vc), so I'm commenting it! However, it might be needed to start fresh in the same folder if he is only doing vc. 
 fi
 
-setfacl -Rm   g::rwx $outputdir  #gives the group rwx permission, and to subdirectories
-setfacl -Rm d:g::rwx $outputdir  #passes the permissions to newly created files/folders
+#setfacl -Rm   g::rwx $outputdir  #gives the group rwx permission, and to subdirectories
+#setfacl -Rm d:g::rwx $outputdir  #passes the permissions to newly created files/folders
 
 if [ ! -d $outputdir/logs  ]
 then
@@ -274,7 +274,7 @@ then
         # the jointVCF directory (containing files before VQSR) does not exist. create it
         mkdir -p $outputdir/$deliverydir/jointVCFs
 fi
-
+`chmod -R ug=rwx $outputdir`
 
 
 `cp $runfile    $outputdir/$deliverydir/docs/runfile.txt`
@@ -307,6 +307,8 @@ then
     echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
     exit 1;
 fi
+`find $outputdir -type d | xargs chmod -R 770`
+`find $outputdir -type f | xargs chmod -R 660`
 
 set +x
 echo -e "\n\n########################################################################################" >&2
@@ -411,6 +413,9 @@ do
 	     mkdir -p $outputdir/$deliverydir/${sample}	     
 	     mkdir -p $TopOutputLogs/${sample}
 	fi
+        `find $outputdir/${sample} -type d | xargs chmod -R 770`
+        `find $outputdir/${sample} -type f | xargs chmod -R 660`
+
 	
 	set +x
 	echo -e "\n\n########################################################################################" >&2               
@@ -419,7 +424,7 @@ do
 	set -x
 
 	echo "nohup $scriptdir/align_dedup.sh $runfile ${sample} $FQ_R1 $FQ_R2 $TopOutputLogs/${sample}/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.align_dedup.${sample} > $TopOutputLogs/${sample}/log.alignDedup.${sample}" > $TopOutputLogs/${sample}/command.align_dedup.${sample}
-        `chmod ug=rwx $TopOutputLogs/${sample}/command.align_dedup.${sample}`
+        `chmod ug=rw $TopOutputLogs/${sample}/command.align_dedup.${sample}`
 
         echo "$TopOutputLogs/${sample} command.align_dedup.${sample}" >> $TopOutputLogs/Anisimov.alignDedup.joblist
         (( inputsamplecounter++ )) # was not initiated above, so starts at zero
@@ -441,7 +446,9 @@ echo "#PBS -e $TopOutputLogs/log.alignDedup.er" >> $alignqsub
 echo "#PBS -l nodes=${numalignnodes}:ppn=$thr" >> $alignqsub
 echo -e "\n" >> $alignqsub
 echo "aprun -n $numalignnodes -N 1 -d $thr ~anisimov/scheduler/scheduler.x $TopOutputLogs/Anisimov.alignDedup.joblist /bin/bash > ${TopOutputLogs}/Anisimov.alignDedup.log" >> $alignqsub
-`chmod ug=r ${TopOutputLogs}/Anisimov.alignDedup.log`
+echo -e "\n" >> $alignqsub
+echo "cat ${outputdir}/logs/mail.alignDedup | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $alignqsub
+`chmod ug=rw ${TopOutputLogs}/Anisimov.alignDedup.log`
 `chmod ug=rw $alignqsub`               
 alignjobid=`qsub $alignqsub` 
 `qhold -h u $alignjobid`
@@ -456,6 +463,10 @@ then
    exit 1        
     
 fi
+
+`find $outputdir -type d | xargs chmod -R 770`
+`find $outputdir -type f | xargs chmod -R 660`
+
 	
 # 	set +x
 #	echo -e "\n\n#######  this jobid=$alignjobid will be used to hold execution of realign_varcall.sh     ########\n\n" >&2
@@ -493,7 +504,7 @@ fi
 #	        echo -e "\n" >> $qsub1
 ################################################## azza: here should only realign/recalibrate!
 #		echo "aprun -n $nodes -d $thr $scriptdir/realign_varcall_by_chr.sh $runfile ${sample} $chr $TopOutputLogs/log.realVcall.${sample}.$chr.in $TopOutputLogs/log.realVcall.${sample}.$chr.ou $TopOutputLogs/qsub.realVcall.${sample}.$chr" >> $qsub1
-#		`chmod a+r $qsub1`               
+#		`chmod ug=rw $qsub1`               
 #		realjobid=`qsub $qsub1` 
 #		echo $realjobid >> $TopOutputLogs/pbs.VCALL.${sample}
 #		echo `date`
@@ -525,7 +536,7 @@ fi
 #	   echo -e "\n" >> $qsub1
 #################################################### azza: here should only be merge_bams of each sample
 #	   echo "aprun -n $nodes -d $thr $scriptdir/merge_vcf.sh $runfile ${sample} $TopOutputLogs/log.mergeVcf.${sample}.in $TopOutputLogs/log.merge.${sample}.ou $TopOutputLogs/qsub.merge.${sample}" >> $qsub1
-#	   `chmod a+r $qsub1`               
+#	   `chmod ug=rw $qsub1`               
 #	   mergejobid=`qsub $qsub1` 
 #	   echo $mergejobid >> $TopOutputLogs/pbs.summary_dependencies
 #	   echo `date`
@@ -570,7 +581,7 @@ fi
 #           echo "#PBS -W depend=afterok:$mergedjobsids" >> $qsub1
 #	   echo -e "\n" >> $qsub1
 #           echo "aprun -n $nodes -d $thr $scriptdir/joint_vcf.sh $runfile $TopOutputLogs/log.jointcall.in $TopOutputLogs/log.jointcall.ou $TopOutputLogs/qsub.jointcall" >> $qsub1
-#           `chmod a+r $qsub1`
+#           `chmod ug=rw $qsub1`
 #           jointcalljobid=`qsub $qsub1`
 #           echo $jointcalljobid >> $TopOutputLogs/pbs.summary_dependencies
 #           echo `date`
@@ -610,10 +621,14 @@ echo "#PBS -l nodes=1:ppn=$thr" >> $summaryqsub
 echo "#PBS -W depend=afterok:$alljobids " >> $summaryqsub
 echo -e "\n" >> $summaryqsub
 echo "aprun -n $nodes -d $thr $scriptdir/summary.sh $runfile $TopOutputLogs/log.summary.in $TopOutputLogs/log.summary.ou $TopOutputLogs/qsub.summary" >> $summaryqsub
-`chmod a+r $summaryqsub`
+`chmod ug=rw $summaryqsub`
 lastjobid=`qsub $summaryqsub`
 echo $lastjobid >> $TopOutputLogs/pbs.SUMMARY
 echo `date`     
+
+
+`find $outputdir -type d | xargs chmod -R 770`
+`find $outputdir -type f | xargs chmod -R 660`
 
 
 if [ `expr ${#lastjobid}` -lt 1 ]
