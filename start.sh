@@ -418,8 +418,8 @@ do
 
 	
 	set +x
-	echo -e "\n\n########################################################################################" >&2               
-	echo -e "####   Creating alignment script for SAMPLE ${sample} with R1=$FQ_R1 R2=$FQ_R2     ##########" >&2
+	echo -e "\n\n########################################################################################" >&2  
+	echo -e "####   Creating alignment script for SAMPLE ${sample} with R1=$FQ_R1 R2=$FQ_R2  " >&2
 	echo -e "########################################################################################\n\n" >&2
 	set -x
 
@@ -467,33 +467,60 @@ fi
 `find $outputdir -type d | xargs chmod -R 770`
 `find $outputdir -type f | xargs chmod -R 660`
 
-	
-# 	set +x
-#	echo -e "\n\n#######  this jobid=$alignjobid will be used to hold execution of realign_varcall.sh     ########\n\n" >&2
-#	set -x	
-#
-#	if [ $analysis == "ALIGNMENT" -o $analysis == "ALIGN" -o $analysis == "ALIGN_ONLY" ]
-#        then
-#		set +x; echo -e "\n ###### ANALYSIS = $analysis ends here. Wrapping up and quitting\n" >&2; set -x;
-#	            # release all held jobs
-#        	    `qrls -h u $alignjobid`
-#        else
-#	   set +x
-#	   echo -e "\n\n########################################################################################" >&2         
-#	   echo -e "####   Next loop2 for Launching Realign-Vcall script for SAMPLE ${sample} on all chr     #####" >&2
-#	   echo -e "########################################################################################\n\n" >&2
-#	   set -x
-#           alnjobid=$( echo $alignjobid | cut -d '.' -f 1 )
-#        
-#	   truncate -s 0 $TopOutputLogs/pbs.VCALL.${sample}
-#	
-#           for chr in $indices
-#           do
-#		set +x
-#		echo -e "\n\n########################################################################################" >&2 
-#		echo -e "####   Realign-Vcall script for SAMPLE ${sample} chr=$chr                              #######" >&2
-#		echo -e "########################################################################################\n\n" >&2
-#		set -x
+
+
+if [ $analysis == "ALIGNMENT" -o $analysis == "ALIGN" -o $analysis == "ALIGN_ONLY" ]
+then
+   set +x; echo -e "\n ###### ANALYSIS = $analysis ends here. Wrapping up and quitting\n" >&2; set -x;
+   # release all held jobs
+   `qrls -h u $alignjobid`
+else
+   set +x
+   echo -e "\n\n#######  this jobid=$alignjobid will be used to hold execution of realign_varcall.sh     ########\n\n" >&2
+   set -x
+   alnjobid=$( echo $alignjobid | cut -d '.' -f 1 )
+   set +x
+   echo -e "\n\n###############################################" >&2   
+   echo -e "####   Now create   Realign-Vcall scripts  ####" >&2
+   echo -e "###############################################\n\n" >&2
+   set -x
+
+       
+   for chr in $indices
+   do
+      set +x
+      echo -e "\n\n####################################" >&2 
+      echo -e "####   CHROMOSOME    chr=$chr   ####" >&2
+      echo -e "####################################\n\n" >&2
+      set -x
+
+      `truncate -s 0 $TopOutputLogs/Anisimov.realVcall.${chr}.joblist`
+
+      inputsamplecounter=0;
+      while read sampleLine
+      do
+         if [ `expr ${#sampleLine}` -lt 1 ]
+         then
+            echo "##############         skipping empty line      #####################" >&2
+         else
+            echo "####   SAMPLE ${sample}   ####" >&2
+            echo "nohup $scriptdir/realign_varcall_by_chr.sh $runfile ${sample} $chr $TopOutputLogs/{sample}/log.realVcall.${sample}.$chr $TopOutputLogs/${sample}/command.realVcall.${sample}.$chr > $TopOutputLogs/${sample}/log.realVcall.${sample}.$chr" > $TopOutputLogs/${sample}/command.realVcall.${sample}.$chr
+            `chmod ug=rw $TopOutputLogs/${sample}/command.realVcall.${sample}.$chr`
+            echo "$TopOutputLogs/${sample} command.realVcall.${sample}.$chr" >> $TopOutputLogs/Anisimov.realVcall.${chr}.joblist
+
+           (( inputsamplecounter++ )) # started at zero
+         fi # end non-empty line
+      done <  $sampleinfo
+
+
+# calculate the number of nodes needed, to be numbers of samples +1
+numvarcallnodes=$((inputsamplecounter+1))
+
+#form qsub
+alignqsub=$TopOutputLogs/qsub.alignDedup
+cat $generic_qsub_header > $alignqsub
+
+
 #
 #		qsub1=$TopOutputLogs/qsub.realVcall.${sample}.$chr
 #		cat $generic_qsub_header > $qsub1
@@ -506,6 +533,7 @@ fi
 #		echo "aprun -n $nodes -d $thr $scriptdir/realign_varcall_by_chr.sh $runfile ${sample} $chr $TopOutputLogs/log.realVcall.${sample}.$chr.in $TopOutputLogs/log.realVcall.${sample}.$chr.ou $TopOutputLogs/qsub.realVcall.${sample}.$chr" >> $qsub1
 #		`chmod ug=rw $qsub1`               
 #		realjobid=`qsub $qsub1` 
+   truncate -s 0 $TopOutputLogs/pbs.VCALL.${sample}
 #		echo $realjobid >> $TopOutputLogs/pbs.VCALL.${sample}
 #		echo `date`
 #		

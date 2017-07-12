@@ -4,7 +4,7 @@
 # 
 redmine=hpcbio-redmine@igb.illinois.edu
 ##redmine=grendon@illinois.edu
-if [ $# != 6 ]
+if [ $# != 5 ]
 then
         MSG="Parameter mismatch. Rerun as: $0 <runfile> <sample> <chr> <log.in> <log.ou> <qsub> "
         echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s 'Variant Calling Workflow failure message' "$redmine"
@@ -26,9 +26,8 @@ runfile=$1
 SampleName=$2
 chr=$3
 elog=$4
-olog=$5
-qsubfile=$6
-LOGS="jobid:${PBS_JOBID}\nqsubfile=$qsubfile\nerrorlog=$elog\noutputlog=$olog"
+command=$5
+LOGS="jobid:${PBS_JOBID}\ncommand=$command\nerrorlog=$elog\noutputlog=$olog"
 
 
 if [ ! -s $runfile ]
