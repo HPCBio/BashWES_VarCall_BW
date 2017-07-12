@@ -512,23 +512,17 @@ else
          fi # end non-empty line
       done <  $sampleinfo
 
+      # calculate the number of nodes needed, to be numbers of samples +1
+      numrealVcallnodes=$((inputsamplecounter+1))
 
-# calculate the number of nodes needed, to be numbers of samples +1
-numvarcallnodes=$((inputsamplecounter+1))
-
-#form qsub
-alignqsub=$TopOutputLogs/qsub.alignDedup
-cat $generic_qsub_header > $alignqsub
-
-
-#
-#		qsub1=$TopOutputLogs/qsub.realVcall.${sample}.$chr
-#		cat $generic_qsub_header > $qsub1
-#		echo "#PBS -N realVcall.${sample}.$chr" >> $qsub1
-#		echo "#PBS -o $TopOutputLogs/log.realVcall.${sample}.$chr.ou" >> $qsub1
-#		echo "#PBS -e $TopOutputLogs/log.realVcall.${sample}.$chr.in" >> $qsub1
-#                echo "#PBS -W depend=afterok:$alnjobid" >> $qsub1
-#	        echo -e "\n" >> $qsub1
+      #form qsub
+      realVcallqsub=$TopOutputLogs/qsub.realVcall.$chr
+      cat $generic_qsub_header > $realVcallqsub
+      echo "#PBS -N realVcall.$chr" >> $realVcallqsub
+      echo "#PBS -o $TopOutputLogs/log.realVcall.$chr.ou" >> $realVcallqsub
+      echo "#PBS -e $TopOutputLogs/log.realVcall.$chr.in" >> $realVcallqsub
+      echo "#PBS -W depend=afterok:$alnjobid" >> $realVcallqsub
+      echo -e "\n" >> $realVcallqsub
 ################################################## azza: here should only realign/recalibrate!
 #		echo "aprun -n $nodes -d $thr $scriptdir/realign_varcall_by_chr.sh $runfile ${sample} $chr $TopOutputLogs/log.realVcall.${sample}.$chr.in $TopOutputLogs/log.realVcall.${sample}.$chr.ou $TopOutputLogs/qsub.realVcall.${sample}.$chr" >> $qsub1
 #		`chmod ug=rw $qsub1`               
