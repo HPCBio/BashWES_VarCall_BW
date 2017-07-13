@@ -1,9 +1,8 @@
 #!/bin/bash
 #
-# realign_varcall_by_chr.sh <runfile> <sample> <chr> <log.in> <log.ou> <qsub>
+# realign_varcall_WES.sh <runfile> <sample> <chr> <log.in> <log.ou> <qsub>
 # 
 redmine=hpcbio-redmine@igb.illinois.edu
-##redmine=grendon@illinois.edu
 if [ $# != 5 ]
 then
         MSG="Parameter mismatch. Rerun as: $0 <runfile> <sample> <chr> <log.in> <log.ou> <qsub> "
@@ -11,20 +10,20 @@ then
         exit 1;
 fi
 set +x
-echo -e "\n\n#####################################################################################"        
-echo -e "#############             BEGIN ANALYSIS PROCEDURE                    ###############"
-echo -e "#####################################################################################\n\n"        
+echo -e "\n\n#####################################################################################" >&2 
+echo -e "#####  BEGIN ANALYSIS PROCEDURE FOR WES WITHOUT BREAKING UP BY CHROMOSOME  ##########" >&2
+echo -e "#####################################################################################\n\n" >&2        
 
-echo -e "\n\n#####################################################################################"        
-echo -e "#############             DECLARING VARIABLES                         ###############"
-echo -e "#####################################################################################\n\n"        
+echo -e "\n\n#####################################################################################" >&2        
+echo -e "#############             DECLARING VARIABLES                         ###############" >&2
+echo -e "#####################################################################################\n\n" >&2        
 
 set -x
 echo `date`
 scriptfile=$0
 runfile=$1
 SampleName=$2
-chr=$3
+intervals=$3
 elog=$4
 command=$5
 LOGS="jobid:${PBS_JOBID}\ncommand=$command\nerrorlog=$elog\noutputlog=$olog"
@@ -58,16 +57,15 @@ sLB=$( cat $runfile | grep -w SAMPLELB | cut -d '=' -f2 )
 analysis=$( cat $runfile | grep -w ANALYSIS | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
 ref_local=${refdir}/$refgenome
 dbsnp_local=${refdir}/$dbSNP
-indel_local=${refdir}/$indeldir
-chr_intervals=${refdir}/$intervals/${chr}_intervals.bed
+#indel_local=${refdir}/$indeldir
 
 outputdir=$rootdir/$SampleName
 set +x
-echo -e "\n\n##################################################################################"  
-echo -e "##################################################################################"          	
-echo -e "#######   we will need these guys throughout, let's take care of them now   ######"
-echo -e "##################################################################################"  
-echo -e "##################################################################################\n\n"          
+echo -e "\n\n##################################################################################" >&2  
+echo -e "##################################################################################" >&2          	
+echo -e "#######   we will need these guys throughout, let's take care of them now   ######" >&2
+echo -e "##################################################################################" >&2  
+echo -e "##################################################################################\n\n" >&2          
 set -x
 
 SampleDir=$outputdir
@@ -76,19 +74,19 @@ RealignDir=$outputdir/realign
 VarcallDir=$outputdir/variant
 DeliveryDir=$rootdir/$deliverydir/$SampleName
 
-qcfile=$rootdir/$deliverydir/docs/QC_test_results.txt            # name of the txt file with all QC test results
-inputbam=$AlignDir/${SampleName}.wdups.sorted.bam                # name of the bam file that align-dedup produced
-dedupsortedbam=${SampleName}.$chr.wdups.sorted.bam               # name of the aligned file -one chr out of inputbam
-realignedbam=${SampleName}.$chr.realigned.bam                    # name of the realigned file
-recalibratedbam=${SampleName}.$chr.recalibrated.bam              # name of the recalibrated file
-rawvariant=${SampleName}.$chr.raw.g.vcf                          # name of the raw variant file
+qcfile=$rootdir/$deliverydir/docs/QC_test_results.txt       # name of the txt file with all QC test results
+inputbam=$AlignDir/${SampleName}.wdups.sorted.bam           # name of the bam file that align-dedup produced
+dedupsortedbam=${SampleName}.wdups.sorted.bam               # name of the aligned file 
+realignedbam=${SampleName}.realigned.bam                    # name of the realigned file
+recalibratedbam=${SampleName}.recalibrated.bam              # name of the recalibrated file
+rawvariant=${SampleName}.raw.g.vcf                          # name of the raw variant file
 
 set +x
-echo -e "\n\n##################################################################################" 
-echo -e "##################################################################################"        
-echo -e "#############                       SANITY CHECK                   ###############"
-echo -e "##################################################################################"
-echo -e "##################################################################################\n\n"
+echo -e "\n\n##################################################################################" >&2 
+echo -e "##################################################################################" >&2        
+echo -e "#############                       SANITY CHECK                   ###############" >&2
+echo -e "##################################################################################" >&2
+echo -e "##################################################################################\n\n" >&2
 set -x 
 if [ ! -d $tmpdir ]
 then
@@ -156,19 +154,16 @@ then
 fi
 
 set +x
-echo -e "\n\n##################################################################################"  
-echo -e "##################################################################################"          	
-echo -e "#######   REALIGN-RECALIBRATION BLOCK STARTS HERE   $SampleName $chr        ######"
-echo -e "##################################################################################"  
-echo -e "##################################################################################\n\n" 
+echo -e "\n\n##################################################################################" >&2  
+echo -e "##################################################################################" >&2          	
+echo -e "#######   REALIGN-RECALIBRATION BLOCK STARTS HERE                           ######" >&2
+echo -e "#######   SAMPLE $SampleName " >&2
+echo -e "##################################################################################" >&2  
+echo -e "##################################################################################\n\n" >&2 
 
 
 
-echo -e "\n\n##################################################################################"
-echo -e "########### PREP WORK: split aligned.bam by chr and grab indels for chr            ###" 
-echo -e "##################################################################################\n\n"
-
-echo -e "\n### ploidy variable, its value is 2 for all chr except mitochondrial               ###\n"
+echo -e "\n### ploidy variable, its value is 2 for all chr except mitochondrial               ###\n" >&2
 set -x
 if [ $chr == "M" ]
 then
@@ -176,72 +171,8 @@ then
 else
     ploidy=2
 fi
-set +x
-echo -e "\n### split aligned.bam by region with  $inputbam and chr=$chr                       ###\n"     
-set -x
 cd $RealignDir
 
-$samtoolsdir/samtools view -bu -@ $thr -h $inputbam $chr > $dedupsortedbam
-
-exitcode=$?
-
-echo `date`
-if [ $exitcode -ne 0 ]
-then
-	 MSG="samtools command failed to split $inputbam by chr exitcode=$exitcode"
-	 echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"
-	 exit $exitcode;
-fi
-if [ -s $dedupsortedbam ]
-then  
-    set +x	   
-    echo -e "### the file was created. But we are not done.     #############"
-    echo -e "### sometimes we may have a BAM file with NO alignmnets      ###"
-    set -x
-    numAlignments=$( $samtoolsdir/samtools view -c $dedupsortedbam ) 
-    
-    echo `date`
-    if [ $numAlignments -eq 0 ]
-    then
-	echo -e "${SampleName}\tREALIGNMENT\tFAIL\tsamtools command did not produce alignments for $dedupsortedbam\n" >> $qcfile	    
-	MSG="samtools command did not produce alignments for $dedupsortedbam"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
-	exit 1;
-    else
-	set +x
-	echo -e "####### $dedupsortedbam seems to be in order ###########"
-   	set -x 
-    fi
-else 
-    MSG="samtools command did not produce a file $dedupsortedbam"
-    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"        
-    exit 1;          
-fi	
-
-echo -e "\n### index  $dedupsortedbam                                 ###\n"  
-
-$samtoolsdir/samtools index $dedupsortedbam
-
-exitcode=$?
-
-echo `date`
-if [ $exitcode -ne 0 ]
-then
-	 MSG="samtools index command failed to split $inputbam by chr exitcode=$exitcode"
-	 echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"
-	 exit $exitcode;
-fi
-set +x
-echo -e "\n\n### grab indels for this region. We need two variables one for realignment and one for recalibration"
-echo -e "###  because they are specified differently for each GATK tool                            ##############\n\n"
-set -x
-cd $indel_local
-
-
-recalparmsindels=$( find ${PWD} -name "*${chr}.vcf" | sed "s/^/ --knownSites /g" | tr "\n" " " )
-recalparmsdbsnp=" -knownSites $dbsnp_local "
-
-realparms=$( find ${PWD} -name "*${chr}.vcf" | sed "s/^/ -known /g" | tr "\n" " " )
 
 if [ `expr ${#recalparmsindels}` -lt 1 ]
 then
@@ -269,11 +200,11 @@ cd $RealignDir
 if [ $analysis == "VC_WITH_REALIGNMENT" ]; then 
 	$javadir/java -Xmx8g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar\
        		-R $ref_local\
-       		-I $dedupsortedbam\
+       		-I $inputbam\
        		-T RealignerTargetCreator\
        		-nt $thr\
        		$realparms\
-       		-o ${SampleName}.$chr.realignTargetCreator.intervals
+       		-o ${SampleName}.realignTargetCreator.intervals
 	
 	exitcode=$?
 	echo `date`
@@ -283,8 +214,8 @@ if [ $analysis == "VC_WITH_REALIGNMENT" ]; then
        		exit $exitcode;
 	fi
 
-	if [ ! -s ${SampleName}.$chr.realignTargetCreator.intervals ]; 	then
-       		echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.$chr.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qcfile
+	if [ ! -s ${SampleName}.realignTargetCreator.intervals ]; 	then
+       		echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qcfile
        		ln -s $dedupsortedbam $RealignDir/$realignedbam
 	else 
 		set +x
@@ -294,7 +225,7 @@ if [ $analysis == "VC_WITH_REALIGNMENT" ]; then
 		set -x
 		$javadir/java -Xmx8g -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
       			-R $ref_local -I $dedupsortedbam -T IndelRealigner $realparms \
-      			--targetIntervals ${SampleName}.$chr.realignTargetCreator.intervals \
+      			--targetIntervals ${SampleName}.realignTargetCreator.intervals \
       			-o $realignedbam
 		
 		exitcode=$?
@@ -347,7 +278,7 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
          -I $realignedbam \
          $recalparmsindels \
 	 $recalparmsdbsnp \
-         --out $SampleName.$chr.recal_report.grp \
+         --out $SampleName.recal_report.grp \
          -nct $thr 
 
 exitcode=$?
@@ -359,9 +290,9 @@ then
 	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" 
 	exit $exitcode;
 fi
-if [ ! -s $SampleName.$chr.recal_report.grp ]
+if [ ! -s $SampleName.recal_report.grp ]
 then
-	echo -e "${SampleName}\tRECALIBRATION\tWARN\t$SampleName.$chr.recal_report.grp is an empty file. Skipping recalibration cmd\n" >> $qcfile
+	echo -e "${SampleName}\tRECALIBRATION\tWARN\t$SampleName.recal_report.grp is an empty file. Skipping recalibration cmd\n" >> $qcfile
         ln -s $dedupsortedbam $RealignDir/$recalibratedbam
 else
 	set +x 
@@ -374,7 +305,7 @@ else
                 -R $ref_local \
                 -I $realignedbam \
                 -T PrintReads \
-                -BQSR $SampleName.$chr.recal_report.grp \
+                -BQSR $SampleName.recal_report.grp \
                 --out $recalibratedbam \
                 -nct $thr
 
@@ -421,7 +352,8 @@ echo -e "#######################################################################
 echo -e "\n\n##################################################################################"  
 echo -e "##################################################################################"	
 echo -e "##################################################################################"        
-echo -e "#############    GATK VARIANT CALLING   FOR SAMPLE $SampleName  $chr   ###########"
+echo -e "#############    GATK VARIANT CALLING "
+echo -e "#############    SAMPLE $SampleName "
 echo -e "##################################################################################"
 echo -e "##################################################################################"  
 echo -e "##################################################################################\n\n"
@@ -448,7 +380,7 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
 	 -stand_emit_conf 30 \
 	 --sample_ploidy $ploidy \
 	 -nt 1 -nct $thr \
-	 -L $chr_intervals\
+	 -L $intervals\
 	 -o $rawvariant
 
 

@@ -168,7 +168,7 @@ fi
 
 set +x 
 echo -e "\n\n########################################################################################" >&2
-echo -e "###########                      checking PBS params                      ##################" >&2
+echo -e "###########                      checking PBS params                      ##############" >&2
 echo -e "########################################################################################\n\n" >&2
 set -x
 
@@ -244,7 +244,7 @@ fi
 
 set +x
 echo -e "\n\n########################################################################################" >&2
-echo -e "#############  Everything seems ok. Now setup/configure output folders and files   #########" >&2
+echo -e "###########  Everything seems ok. Now setup/configure output folders and files   #######" >&2
 echo -e "########################################################################################\n\n" >&2
 set -x
 
@@ -332,11 +332,12 @@ echo -e "#####                               MAIN LOOP STARTS HERE              
 echo -e "########################################################################################" >&2
 echo -e "#####  Trimming has been performed already                                     #########" >&2
 echo -e "#####  Alignment-dedup analysis: one qsub per sample                           #########" >&2
-echo -e "#####  Realignment-recalibration-variantCalling: 25 qsubs per sample, one per chr   ####" >&2
+echo -e "#####  Realignment-recalibration-variantCalling: 25 qsubs per batch, one per chr    ####" >&2
 echo -e "########################################################################################\n\n" >&2
 set -x
 
 `truncate -s 0 $TopOutputLogs/Anisimov.alignDedup.joblist`
+`truncate -s 0 $TopOutputLogs/Anisimov.alignDedup.log`
 `chmod ug=rw $TopOutputLogs/Anisimov.alignDedup.joblist`
 
 while read sampleLine
@@ -419,7 +420,10 @@ do
 	
 	set +x
 	echo -e "\n\n########################################################################################" >&2  
-	echo -e "####   Creating alignment script for SAMPLE ${sample} with R1=$FQ_R1 R2=$FQ_R2  " >&2
+	echo -e "####   Creating alignment script for   " >&2
+	echo -e "####   SAMPLE ${sample}   " >&2
+	echo -e "####   with R1=$FQ_R1     " >&2
+	echo -e "####   and  R2=$FQ_R2     " >&2
 	echo -e "########################################################################################\n\n" >&2
 	set -x
 
@@ -432,6 +436,13 @@ do
 
 done <  $sampleinfo	
 
+
+
+set +x
+echo -e "\n\n#######################################################################" >&2
+echo -e "#####   Now create the Anisimov bundle for aligning all samples   #####" >&2
+echo -e "#######################################################################\n\n" >&2
+set -x
 
 # calculate the number of nodes needed, to be numbers of samples +1
 numalignnodes=$((inputsamplecounter+1))
@@ -459,9 +470,8 @@ echo `date`
 if [ `expr ${#alignjobid}` -lt 1 ]
 then
    MSG="unable to launch qsub align job for ${sample}. Exiting now"
-   echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"                     
+   echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"  
    exit 1        
-    
 fi
 
 `find $outputdir -type d | xargs chmod -R 770`
@@ -490,11 +500,13 @@ else
    do
       set +x
       echo -e "\n\n####################################" >&2 
-      echo -e "####   CHROMOSOME    chr=$chr   ####" >&2
+      echo -e "####   CHROMOSOME    chr=$chr   " >&2
       echo -e "####################################\n\n" >&2
       set -x
 
       `truncate -s 0 $TopOutputLogs/Anisimov.realVcall.${chr}.joblist`
+      `truncate -s 0 $TopOutputLogs/Anisimov.realVcall.${chr}.log`
+      `truncate -s 0 $TopOutputLogs/pbs.REALVCALL.${chr}`
 
       inputsamplecounter=0;
       while read sampleLine
@@ -503,42 +515,48 @@ else
          then
             echo "##############         skipping empty line      #####################" >&2
          else
-            echo "####   SAMPLE ${sample}   ####" >&2
+            set +x
+            echo -e "\n####   SAMPLE ${sample}   ####" >&2
+            set -x
             echo "nohup $scriptdir/realign_varcall_by_chr.sh $runfile ${sample} $chr $TopOutputLogs/{sample}/log.realVcall.${sample}.$chr $TopOutputLogs/${sample}/command.realVcall.${sample}.$chr > $TopOutputLogs/${sample}/log.realVcall.${sample}.$chr" > $TopOutputLogs/${sample}/command.realVcall.${sample}.$chr
             `chmod ug=rw $TopOutputLogs/${sample}/command.realVcall.${sample}.$chr`
             echo "$TopOutputLogs/${sample} command.realVcall.${sample}.$chr" >> $TopOutputLogs/Anisimov.realVcall.${chr}.joblist
 
-           (( inputsamplecounter++ )) # started at zero
          fi # end non-empty line
       done <  $sampleinfo
 
-      # calculate the number of nodes needed, to be numbers of samples +1
-      numrealVcallnodes=$((inputsamplecounter+1))
-
-      #form qsub
+      set +x
+      echo -e "\n####" >&2
+      echo -e "####  form Anisimov bundle for chromosome $chr; num nodes is same as for alignment  ####" >&2
+      echo -e "####" >&2
+      set -x
       realVcallqsub=$TopOutputLogs/qsub.realVcall.$chr
       cat $generic_qsub_header > $realVcallqsub
       echo "#PBS -N realVcall.$chr" >> $realVcallqsub
       echo "#PBS -o $TopOutputLogs/log.realVcall.$chr.ou" >> $realVcallqsub
       echo "#PBS -e $TopOutputLogs/log.realVcall.$chr.in" >> $realVcallqsub
+      echo "#PBS -l nodes=${numalignnodes}:ppn=$thr" >> $realVcallqsub
       echo "#PBS -W depend=afterok:$alnjobid" >> $realVcallqsub
       echo -e "\n" >> $realVcallqsub
-################################################## azza: here should only realign/recalibrate!
-#		echo "aprun -n $nodes -d $thr $scriptdir/realign_varcall_by_chr.sh $runfile ${sample} $chr $TopOutputLogs/log.realVcall.${sample}.$chr.in $TopOutputLogs/log.realVcall.${sample}.$chr.ou $TopOutputLogs/qsub.realVcall.${sample}.$chr" >> $qsub1
-#		`chmod ug=rw $qsub1`               
-#		realjobid=`qsub $qsub1` 
-   truncate -s 0 $TopOutputLogs/pbs.VCALL.${sample}
-#		echo $realjobid >> $TopOutputLogs/pbs.VCALL.${sample}
-#		echo `date`
-#		
-#		if [ `expr ${#realjobid}` -lt 1 ]
-#		then
-#		     MSG="unable to launch qsub realign job for ${sample}. Exiting now"
-#		     echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"                     
-#		     exit 1        
-#		fi
-#
-#           done
+      echo "aprun -n $numalignnodes -N 1 -d $thr ~anisimov/scheduler/scheduler.x $TopOutputLogs/Anisimov.realVcall.${chr}.joblist /bin/bash > ${TopOutputLogs}/Anisimov.realVcall.$chr.log" >> $realVcallqsub
+      echo -e "\n" >> $realVcallqsub
+      echo "cat ${outputdir}/logs/mail.realVcall.$chr | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $realVcallqsub
+      `chmod ug=rw ${TopOutputLogs}/Anisimov.realVcall.$chr.log`
+      `chmod ug=rw $realVcallqsub`
+      realVcalljobid=`qsub $realVcallqsub`
+      `qhold -h u $alignjobid`
+      echo $realVcalljobid >> $TopOutputLogs/pbs.REALVCALL.$chr
+      echo $realVcalljobid >> $TopOutputLogs/pbs.summary_dependencies
+      echo `date`
+
+      if [ `expr ${#realVcalljobid}` -lt 1 ]
+      then
+         MSG="unable to launch qsub realVcall job for chromosome ${chr}. Exiting now"
+         echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+         exit 1        
+      fi
+   done
+fi
 #           set +x  
 #	   echo -e "\n\n########################################################################################" >&2            
 #	   echo -e "####   Out of loop2. Now launching merge_vcf script for SAMPLE ${sample}       ##########" >&2
@@ -661,7 +679,8 @@ then
 fi
 
  # release all held jobs
- `qrls -h u $alignjobid`
+ releasejobids=$( cat $TopOutputLogs/pbs.summary_dependencies | sed "s/\.[a-z]*//g" | tr "\n" " " )
+ `qrls -h u $releasejobids`
 
 set +x        
 echo -e "\n\n########################################################################################" >&2
