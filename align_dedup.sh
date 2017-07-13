@@ -45,6 +45,7 @@ reportticket=$( cat $runfile | grep -w REPORTTICKET | cut -d '=' -f2 )
 rootdir=$( cat $runfile | grep -w OUTPUTDIR | cut -d '=' -f2 )
 deliverydir=$( cat $runfile | grep -w DELIVERYFOLDER | cut -d '=' -f2 ) 
 tmpdir=$( cat $runfile | grep -w TMPDIR | cut -d '=' -f2 )
+analysis=$( cat $runfile | grep -w ANALYSIS | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
 thr=$( cat $runfile | grep -w PBSCORES | cut -d '=' -f2 )
 indeldir=$( cat $runfile | grep -w INDELDIR | cut -d '=' -f2 )
 alignertool=$( cat $runfile | grep -w ALIGNERTOOL | cut -d '=' -f2  )
@@ -206,11 +207,10 @@ then
 	echo `date`
 	if [ $exitcode -ne 0 ]
 	then
-	    MSG="alignment-dedup step  failed for sample $SampleName exitcode=$exitcode."
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"| mail -s "[Task #${reportticket}]" "$redmine,$email"
-	    exit $exitcode;
+           MSG="ALIGNMENT-DEDUPLICATION failed with exitcode=$exitcode for $SampleName"
+           echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+	   exit $exitcode;
 	fi
-
         `chmod 660 ${dedupbam}*`
 
 	        
@@ -231,8 +231,8 @@ then
 	    if [ $numAlignments -eq 0 ]
 	    then
 	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tbwa mem command did not produce alignments for $AlignDir/$dedupbam\n" >> $qcfile	    
-		MSG="bwa mem command did not produce alignments for $AlignDir/$dedupbam alignment failed"
-		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+		MSG="bwa mem command did not produce alignments for $AlignDir/$dedupbam"
+                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
 	    else
 		set +x
@@ -240,8 +240,8 @@ then
 		set -x
 	    fi
 	else 
-	    MSG="bwa mem command did not produce a file $AlignDir/$dedupbam alignment failed"
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"       
+	    MSG="bwa mem command did not produce a file $AlignDir/$dedupbam"
+            echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	    exit 1;          
 	fi       
 
@@ -281,7 +281,7 @@ then
 	    then
 	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tnovosort command did not produce a file for $AlignDir/$dedupsortedbam\n" >> $qcfile	    
 		MSG="novosort command did not produce a file for $AlignDir/$dedupsortedbam"
-		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
 	    else
 		set +x
@@ -291,7 +291,7 @@ then
         fi
 	else 
 	    MSG="novosort command did not produce a file $AlignDir/$dedupsortedbam"
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"       
+            echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	    exit 1;          
 	fi       	
 
@@ -361,8 +361,8 @@ then
 	    if [ $numAlignments -eq 0 ]
 	    then
 	        echo -e "${SampleName}\tALIGNMENT\tFAIL\taligner command did not produce alignments for $AlignDir/$alignedbam\n" >> $qcfile	    
-		MSG="aligner command did not produce alignments for $AlignDir/$alignedbam alignment failed"
-		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"      
+		MSG="aligner command did not produce alignments for $AlignDir/$alignedbam"
+                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
 	    else
 		set +x
@@ -370,8 +370,8 @@ then
 		set -x 
 	    fi
 	else 
-	    MSG="aligner command did not produce a file $AlignDir/$alignedbam alignment failed"
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"       
+	    MSG="aligner command did not produce a file $AlignDir/$alignedbam"
+            echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	    exit 1;          
 	fi 
 	set +x      
@@ -411,14 +411,14 @@ then
 	    then
 	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tnovosort command did not produce a file for $AlignDir/$dedupsortedbam\n" >> $qcfile	    
 		MSG="novosort command did not produce a file for $AlignDir/$dedupsortedbam"
-		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" 
+                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
 	    else
 		echo -e "####### $AlignDir/$dedupbam seems to be in order ###########"
 	    fi
 	else 
 	    MSG="novosort command did not produce a file $AlignDir/$dedupsortedbam"
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"       
+            echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	    exit 1;          
 	fi   
 	
@@ -468,8 +468,8 @@ then
 	    if [ $numAlignments -eq 0 ]
 	    then
 	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tbwa mem command did not produce alignments for $AlignDir/$alignedbam\n" >> $qcfile	    
-		MSG="bwa mem command did not produce alignments for $AlignDir/$alignedbam alignment failed"
-		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"      
+		MSG="bwa mem command did not produce alignments for $AlignDir/$alignedbam"
+                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
 	    else
 		set +x
@@ -477,8 +477,8 @@ then
 		set -x 
 	    fi
 	else 
-	    MSG="bwa mem command did not produce a file $AlignDir/$alignedbam alignment failed"
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"       
+	    MSG="bwa mem command did not produce a file $AlignDir/$alignedbam"
+            echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	    exit 1;          
 	fi      
 	set +x 
@@ -543,7 +543,7 @@ then
 	    then
 	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tpicard command did not produce a file for $AlignDir/$dedupsortedbam\n" >> $qcfile	    
 		MSG="novosort command did not produce a file for $AlignDir/$dedupsortedbam"
-		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" 
+                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
 	    else
 		set +x
@@ -552,7 +552,7 @@ then
 	    fi
 	else 
 	    MSG="picard command did not produce a file $AlignDir/$dedupsortedbam"
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"       
+            echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	    exit 1;          
 	fi   
 
@@ -566,7 +566,7 @@ then
 	
 else
 	MSG="unrecognized deduplication tool $markduplicates"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit 1;        
 
 fi
@@ -733,7 +733,7 @@ set -x
 
 
 MSG="ALIGNMENT-DEDUPLICATION for $SampleName finished successfully"
-echo -e "program=$scriptfile at line=$LINENO.\nReason=$MSG\n$LOGS" >> ${rootdir}/logs/mail.alignDedup 
+echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.SUCCESS 
 
 echo `date`
 
