@@ -442,7 +442,7 @@ do
         else
            echo "nohup $scriptdir/align_dedup.sh $runfile ${sample} $FQ_R1 $FQ_R2 $TopOutputLogs/${sample}/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.alignDedup.${sample}" > $TopOutputLogs/${sample}/command.$analysis.${sample}
            echo -e "\n" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
-           echo "nohup $scriptdir/recal_varcall_WES.sh $runfile ${sample} $regions $TopOutputLogs/${sample}/log.recalVcall.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.recalVcall.${sample}" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
+           echo "nohup $scriptdir/recal_varcall_WES.sh $runfile ${sample} $TopOutputLogs/${sample}/log.recalVcall.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.recalVcall.${sample}" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
         fi
 
         `chmod ug=rw $TopOutputLogs/${sample}/command.$analysis.${sample}`

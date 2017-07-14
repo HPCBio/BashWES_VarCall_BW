@@ -615,7 +615,7 @@ if [ ! -s $flagstats ]
 then
 	 echo -e "${SampleName}\tQCT/EST\tFAIL\tsamtools/samtools flagstat command produced an empty file $flagstats\n" >> $qcfile
 	 MSG="samtools flagstat command produced an empty file  $flagstats"
-	 echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+         echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	 exit $exitcode;
 fi
 
@@ -637,7 +637,7 @@ then
 	echo -e "ok val"
 else
 	MSG="$flagstats samtools flagstat file parsed incorrectly"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit $exitcode;
 fi
 if [ $tot_reads -eq $tot_reads 2>/dev/null ]
@@ -645,7 +645,7 @@ then
 	echo -e "ok val"
 else
 	MSG="$flagstats samtools flagstat file parsed incorrectly"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit $exitcode;
 fi
 
@@ -654,7 +654,7 @@ then
 	echo -e "ok val"
 else
 	MSG="$flagstats samtools flagstat file parsed incorrectly"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit $exitcode;
 fi
 
@@ -675,7 +675,7 @@ then
 	echo -e "ok val"
 else
 	MSG="$flagstats samtools flagstat file parsed incorrectly"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit $exitcode;
 fi
 
@@ -684,7 +684,7 @@ then
 	echo -e "ok val"
 else
 	MSG="$flagstats samtools flagstat file parsed incorrectly"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit $exitcode;
 fi
 set +x

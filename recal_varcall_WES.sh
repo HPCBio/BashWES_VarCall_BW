@@ -3,9 +3,9 @@
 # realign_varcall_WES.sh <runfile> <sample> <chr> <log.in> <log.ou> <qsub>
 # 
 redmine=hpcbio-redmine@igb.illinois.edu
-if [ $# != 5 ]
+if [ $# != 4 ]
 then
-        MSG="Parameter mismatch. Rerun as: $0 <runfile> <sample> <chr> <log.in> <log.ou> <qsub> "
+        MSG="Parameter mismatch. Rerun as: $0 <runfile> <sample> <log> <qsub> "
         echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s 'Variant Calling Workflow failure message' "$redmine"
         exit 1;
 fi
@@ -23,9 +23,8 @@ echo `date`
 scriptfile=$0
 runfile=$1
 SampleName=$2
-intervals=$3
-elog=$4
-command=$5
+elog=$3
+command=$4
 LOGS="jobid:${PBS_JOBID}\ncommand=$command\nerrorlog=$elog\noutputlog=$olog"
 
 
@@ -43,8 +42,11 @@ tmpdir=$( cat $runfile | grep -w TMPDIR | cut -d '=' -f2 )
 thr=$( cat $runfile | grep -w PBSCORES | cut -d '=' -f2 )
 refdir=$( cat $runfile | grep -w REFGENOMEDIR | cut -d '=' -f2 )
 indeldir=$( cat $runfile | grep -w INDELDIR | cut -d '=' -f2 )
+indelslist=$( cat $runfile | grep -w INDELSLIST | cut -d '=' -f2 )
 refgenome=$( cat $runfile | grep -w REFGENOME | cut -d '=' -f2 )
-dbSNP=$( cat $runfile | grep -w DBSNP | cut -d '=' -f2 )
+dbsnpdir=$( cat $runfile | grep -w DBSNPDIR | cut -d '=' -f2 )
+dbsnp=$( cat $runfile | grep -w DBSNP | cut -d '=' -f2 )
+intervals=$( cat $runfile | grep -w INTERVALS | cut -d '=' -f2 )
 aligner_parms=$( cat $runfile | grep -w BWAMEMPARAMS | cut -d '=' -f2 )
 picardir=$( cat $runfile | grep -w PICARDIR | cut -d '=' -f2 )
 samtoolsdir=$( cat $runfile | grep -w SAMDIR | cut -d '=' -f2 )
@@ -56,8 +58,6 @@ sCN=$( cat $runfile | grep -w SAMPLECN | cut -d '=' -f2 )
 sLB=$( cat $runfile | grep -w SAMPLELB | cut -d '=' -f2 )
 analysis=$( cat $runfile | grep -w ANALYSIS | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
 ref_local=${refdir}/$refgenome
-dbsnp_local=${refdir}/$dbSNP
-#indel_local=${refdir}/$indeldir
 
 outputdir=$rootdir/$SampleName
 set +x
@@ -79,7 +79,7 @@ inputbam=$AlignDir/${SampleName}.wdups.sorted.bam           # name of the bam fi
 dedupsortedbam=${SampleName}.wdups.sorted.bam               # name of the aligned file 
 realignedbam=${SampleName}.realigned.bam                    # name of the realigned file
 recalibratedbam=${SampleName}.recalibrated.bam              # name of the recalibrated file
-rawvariant=${SampleName}.raw.g.vcf                          # name of the raw variant file
+rawvariant=${SampleName}.raw.gvcf                           # name of the raw variant file
 
 set +x
 echo -e "\n\n##################################################################################" >&2 
@@ -96,7 +96,7 @@ fi
 if [ `expr ${#SampleName}` -lt 1 ]
 then
     MSG="$SampleName sample undefined variable"
-    echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"                     
+    echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
     exit 1     
 else
     sID=$SampleName
@@ -106,7 +106,7 @@ fi
 if [ `expr ${#sLB}` -lt 1 -o `expr ${#sPL}` -lt 1 -o `expr ${#sCN}` -lt 1 ] 
 then
     MSG="SAMPLELB=$sLB SAMPLEPL=$sPL SAMPLECN=$sCN at least one of these fields has invalid values. "
-    echo -e "program=$0 stopped at line=$LINENO.\nReason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+    echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
     exit 1;
 fi
 
@@ -116,40 +116,40 @@ rgheader=$( echo -n -e "@RG\t" )$( echo -e "${RGparms}"  | tr ":" "\t" | tr "=" 
 if [ ! -d $rootdir ]
 then
     MSG="Invalid value specified for OUTPUTDIR=$rootdir in the runfile."
-    echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+    echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
     exit 1;
 fi
 
 if [ ! -d $AlignDir ]
 then
     MSG="$AlignDir directory not found"
-    echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+    echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
     exit 1;
 fi
 
 if [ ! -d $RealignDir ]
 then
     MSG="$RealignDir directory not found"
-    echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+    echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
     exit 1;
 fi
 if [ ! -d $VarcallDir ]
 then
     MSG="$VarcallDir directory not found"
-    echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+    echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
     exit 1;
 fi
 if [ ! -d $DeliveryDir ]
 then
     MSG="$DeliveryDir directory not found"
-    echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+    echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
     exit 1;
 fi
 
 if [ ! -s $inputbam ]
 then
     MSG="$inputbam aligned-dedup file not found"
-    echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+    echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
     exit 1;
 fi
 
@@ -160,33 +160,34 @@ echo -e "#######   REALIGN-RECALIBRATION BLOCK STARTS HERE                      
 echo -e "#######   SAMPLE $SampleName " >&2
 echo -e "##################################################################################" >&2  
 echo -e "##################################################################################\n\n" >&2 
-
-
-
-echo -e "\n### ploidy variable, its value is 2 for all chr except mitochondrial               ###\n" >&2
 set -x
-if [ $chr == "M" ]
-then
-    ploidy=1
-else
+
+
+
+#echo -e "\n### ploidy variable, its value is 2 for all chr except mitochondrial               ###\n" >&2
+#set -x
+#if [ $chr == "M" ]
+#then
+#    ploidy=1
+#else
     ploidy=2
-fi
+#fi
 cd $RealignDir
 
+for indelsFile in ${indelslist}
+do 
+   indelsExists=$( find ${indeldir} -name "${indelsFile}" )
+   if [ `expr ${#indelsExist}` -lt 1 ]
+   then
+      MSG="indels ${indelsFile} were not found in ${indeldir}"
+      echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+      exit 1;
+   fi
+   recalparmsindels="${recalparmsindels} -knownSites ${indeldir}/${indelsFile}"  
+   realparms="${recalparmsindels} -known ${indeldir}/${indelsFile}"  
+done
 
-if [ `expr ${#recalparmsindels}` -lt 1 ]
-then
-    MSG="no indels were found for $chr in this folder $indel_local"
-    echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
-    exit 1;
-fi
-
-if [ `expr ${#realparms}` -lt 1 ]
-then
-    MSG="no indels were found for $chr in this folder $indel_local"
-    echo -e "program=$0 stopped at line=$LINENO. Reason=$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
-    exit 1;
-fi
+recalparmsdbsnp="-knownSites ${dbsnpdir}/${dbsnp}"
 
 
 ############################## Indel realignment should be added as an optional stage to the pipeline. This requires adding a variable to the runfile, and also changing the output file name 
@@ -195,9 +196,9 @@ set +x
 echo -e "########### command one: executing GATK RealignerTargetCreator using known indels ####" 
 echo -e "##################################################################################\n\n"
 set -x
-cd $RealignDir
 
-if [ $analysis == "VC_WITH_REALIGNMENT" ]; then 
+if [ $analysis == "VC_WITH_REALIGNMENT" ]
+then 
 	$javadir/java -Xmx8g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar\
        		-R $ref_local\
        		-I $inputbam\
@@ -205,16 +206,19 @@ if [ $analysis == "VC_WITH_REALIGNMENT" ]; then
        		-nt $thr\
        		$realparms\
        		-o ${SampleName}.realignTargetCreator.intervals
-	
+
 	exitcode=$?
+        chmod ug=rw ${SampleName}.realignTargetCreator.intervals	
 	echo `date`
-	if [ $exitcode -ne 0 ]; then
+	if [ $exitcode -ne 0 ]
+        then
        		MSG="RealignerTargetCreator command failed exitcode=$exitcode. realignment for sample $SampleName.$chr. stopped"
-       		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"
+                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
        		exit $exitcode;
 	fi
 
-	if [ ! -s ${SampleName}.realignTargetCreator.intervals ]; 	then
+	if [ ! -s ${SampleName}.realignTargetCreator.intervals ]
+        then
        		echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qcfile
        		ln -s $dedupsortedbam $RealignDir/$realignedbam
 	else 
@@ -229,6 +233,7 @@ if [ $analysis == "VC_WITH_REALIGNMENT" ]; then
       			-o $realignedbam
 		
 		exitcode=$?
+                chmod ug=rw $realignedbam
 		set +x
 		echo -e "\n\n##################################################################################" 
 		echo -e "########### command three: sanity check for GATK IndelRealigner                  #####"
@@ -237,7 +242,7 @@ if [ $analysis == "VC_WITH_REALIGNMENT" ]; then
 		echo `date`
 		if [ $exitcode -ne 0 ]; then
        			MSG="indelrealigner command failed exitcode=$exitcode. realignment for sample $SampleName stopped"
-       			echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+                        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
        			exit $exitcode;
 		fi
 		
@@ -251,14 +256,14 @@ if [ $analysis == "VC_WITH_REALIGNMENT" ]; then
 	    		if [ $numAlignments -eq 0 ]; then
 				echo -e "${SampleName}\tREALIGNMENT\tFAIL\tGATK IndelRealigner command did not produce alignments for $realignedbam\n" >> $qcfile	    
 				MSG="GATK IndelRealigner command did not produce alignments for $realignedbam"
-				echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+                                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 				exit 1;
 	    		else
 				echo -e "####### $realignedbam seems to be in order ###########"
 	    		fi
 		else 
 	    		MSG="indelrealigner command did not produce a file $realignedbam"
-	    		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"        
+                        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	    		exit 1;          
 		fi
 	fi
@@ -280,14 +285,14 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
 	 $recalparmsdbsnp \
          --out $SampleName.recal_report.grp \
          -nct $thr 
-
 exitcode=$?
+chmod ug=rw $SampleName.recal_report.grp
 
 echo `date`
 if [ $exitcode -ne 0 ]
 then
 	MSG="BaseRecalibrator command failed exitcode=$exitcode. recalibration for sample $SampleName stopped"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" 
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit $exitcode;
 fi
 if [ ! -s $SampleName.recal_report.grp ]
@@ -308,8 +313,8 @@ else
                 -BQSR $SampleName.recal_report.grp \
                 --out $recalibratedbam \
                 -nct $thr
-
         exitcode=$?
+        chmod ug=rw $recalibratedbam
 
 	set +x
 	echo -e "\n\n##################################################################################" 
@@ -328,7 +333,7 @@ else
 	    then
                 echo -e "${SampleName}\tRECALIBRATION\tFAIL\tBQSR Recalibrator command did not produce alignments for $recalibratedbam\n" >> $qcfile	    
 		MSG="GATK BQSR Recalibrator command did not produce alignments for $recalibratedbam"
-		echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
 	    else
 	        set +x
@@ -337,7 +342,7 @@ else
 	    fi
 	else 
 	    MSG="GATK BQSR Recalibrator command did not produce a file $recalibratedbam"
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS"        
+            echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	    exit 1;          
 	fi	
 
@@ -359,6 +364,10 @@ echo -e "#######################################################################
 echo -e "##################################################################################\n\n"
 
 echo `date`        
+
+`find . -type d | xargs chmod -R 770`
+`find . -type f | xargs chmod -R 660`
+
 
 cd $VarcallDir
 
@@ -383,21 +392,21 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
 	 -L $intervals\
 	 -o $rawvariant
 
-
 exitcode=$?
+chmod ug=rw $rawvariant
 echo `date`
 
 if [ $exitcode -ne 0 ]
 then
 	MSG="GATK HaplotypeCaller command failed exitcode=$exitcode for $rawvariant"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" 
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit $exitcode;
 fi
 if [ ! -s $rawvariant ]
 then
 	echo -e "${SampleName}\tVCALL\tFAIL\tHaplotypeCaller command did not produce results for $rawvariant\n" >> $qcfile	    
 	MSG="GATK HaplotypeCaller command did not produce results for $rawvariant"
-	echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit 1;
 fi
 set +x
@@ -423,7 +432,13 @@ echo `date`
 set +x
 echo `date`
 echo -e "\n\n##################################################################################"
-echo -e "#############    DONE PROCESSING SAMPLE $SampleName. EXITING NOW.  ###############"
+echo -e "#############    DONE PROCESSING SAMPLE $SampleName"
 echo -e "##################################################################################\n\n"
 set -x
+
+MSG="GATK HaplotypeCaller finished successfully for ${SampleName}"
+echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.SUCCESS
+
+`find . -type d | xargs chmod -R 770`
+`find . -type f | xargs chmod -R 660`
 
