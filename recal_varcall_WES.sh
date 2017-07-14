@@ -176,8 +176,7 @@ cd $RealignDir
 
 for indelsFile in ${indelslist}
 do 
-   indelsExists=$( find ${indeldir} -name "${indelsFile}" )
-   if [ `expr ${#indelsExist}` -lt 1 ]
+   if [ ! -e ${indeldir}/${indelsFile} ]
    then
       MSG="indels ${indelsFile} were not found in ${indeldir}"
       echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
@@ -268,8 +267,11 @@ then
 		fi
 	fi
 else 
-	realignedbam=$dedupsortedbam	#if no realignment required, then use the dedupsortedbam file as input to the next step. This is to avoid introducing a new variable
+	realignedbam=$outputdir/align/$dedupsortedbam	#if no realignment required, then use the dedupsortedbam file as input to the next step. This is to avoid introducing a new variable
 fi
+
+
+??
 
 echo `date`     
 set +x
@@ -380,7 +382,7 @@ set -x
 $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
 	 -T HaplotypeCaller \
 	 -R $ref_local \
-	 --dbsnp $dbsnp_local \
+	 --dbsnp ${dbsnpdir}/${dbsnp} \
 	 -I $RealignDir/$recalibratedbam \
 	 --emitRefConfidence GVCF \
 	 -gt_mode DISCOVERY \
