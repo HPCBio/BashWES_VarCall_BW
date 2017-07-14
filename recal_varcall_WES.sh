@@ -70,7 +70,7 @@ set -x
 
 SampleDir=$outputdir
 AlignDir=$outputdir/align
-RealignDir=$outputdir/realign
+RealignDir=$outputdir/realrecal
 VarcallDir=$outputdir/variant
 DeliveryDir=$rootdir/$deliverydir/$SampleName
 

@@ -412,13 +412,13 @@ do
 	     ### Maybe not. We already run trimming and we want to keep those results
 	     ### rm -R $outputdir/$sample
 	     mkdir -p $outputdir/${sample}/align
-	     mkdir -p $outputdir/${sample}/realign
+	     mkdir -p $outputdir/${sample}/realrecal
 	     mkdir -p $outputdir/${sample}/variant
 	     mkdir -p $outputdir/$deliverydir/${sample}
 	     mkdir -p $TopOutputLogs/${sample}
 	else 
 	     mkdir -p $outputdir/${sample}/align
-	     mkdir -p $outputdir/${sample}/realign
+	     mkdir -p $outputdir/${sample}/realrecal
 	     mkdir -p $outputdir/${sample}/variant
 	     mkdir -p $outputdir/$deliverydir/${sample}	     
 	     mkdir -p $TopOutputLogs/${sample}
