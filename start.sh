@@ -294,6 +294,8 @@ TopOutputLogs=$outputdir/logs
 
 truncate -s 0 $TopOutputLogs/pbs.$analysis
 truncate -s 0 $TopOutputLogs/pbs.summary_dependencies
+truncate -s 0 $TopOutputLogs/mail.${analysis}.SUCCESS
+truncate -s 0 $TopOutputLogs/mail.${analysis}.FAILURE
 
 generic_qsub_header=$TopOutputLogs/qsubGenericHeader
 truncate -s 0 $generic_qsub_header
@@ -442,7 +444,7 @@ do
         else
            echo "nohup $scriptdir/align_dedup.sh $runfile ${sample} $FQ_R1 $FQ_R2 $TopOutputLogs/${sample}/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.alignDedup.${sample}" > $TopOutputLogs/${sample}/command.$analysis.${sample}
            echo -e "\n" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
-           echo "nohup $scriptdir/recal_varcall_WES.sh $runfile ${sample} $TopOutputLogs/${sample}/log.recalVcall.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.recalVcall.${sample}" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
+           echo "nohup $scriptdir/real_recal_varcall_WES.sh $runfile ${sample} $TopOutputLogs/${sample}/log.recalVcall.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.recalVcall.${sample}" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
         fi
 
         `chmod ug=rw $TopOutputLogs/${sample}/command.$analysis.${sample}`

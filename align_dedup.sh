@@ -739,6 +739,6 @@ echo `date`
 
 set +x
 echo -e "\n\n#################################################################################################" >&2
-echo -e "#############    DONE PROCESSING SAMPLE $SampleName. EXITING NOW.  " >&2
+echo -e "#############    DONE WITH ALIGNMENT-DEDUPLICATION ON SAMPLE $SampleName. EXITING NOW.  " >&2
 echo -e "#################################################################################################\n\n" >&2
 set -x
