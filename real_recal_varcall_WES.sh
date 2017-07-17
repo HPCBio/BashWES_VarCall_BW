@@ -183,7 +183,7 @@ do
       exit 1;
    fi
    recalparmsindels="${recalparmsindels} -knownSites ${indeldir}/${indelsFile}"  
-   realparms="${recalparmsindels} -known ${indeldir}/${indelsFile}"  
+   realparms="${realparms} -known ${indeldir}/${indelsFile}"  
 done
 
 recalparmsdbsnp="-knownSites ${dbsnpdir}/${dbsnp}"
@@ -219,7 +219,6 @@ then
 	if [ ! -s ${SampleName}.realignTargetCreator.intervals ]
         then
        		echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qcfile
-       		ln -s $dedupsortedbam $RealignDir/$realignedbam
 	else 
 		set +x
 		echo -e "\n\n##################################################################################" 
@@ -227,7 +226,9 @@ then
 		echo -e "##################################################################################\n\n"
 		set -x
 		$javadir/java -Xmx8g -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
-      			-R $ref_local -I $dedupsortedbam -T IndelRealigner $realparms \
+      			-R $ref_local \
+                        -I $outputdir/align/$dedupsortedbam \
+                         -T IndelRealigner $realparms \
       			--targetIntervals ${SampleName}.realignTargetCreator.intervals \
       			-o $realignedbam
 		
@@ -271,7 +272,6 @@ else
 fi
 
 
-??
 
 echo `date`     
 set +x

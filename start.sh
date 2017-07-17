@@ -474,7 +474,7 @@ echo "#PBS -o $TopOutputLogs/log.${analysis}.ou" >> $analysisqsub
 echo "#PBS -e $TopOutputLogs/log.${analysis}.er" >> $analysisqsub
 echo "#PBS -l nodes=${numnodes}:ppn=$thr" >> $analysisqsub
 echo -e "\n" >> $analysisqsub
-echo "aprun -n $numnodes -N 1 -d $thr ~anisimov/scheduler/scheduler.x $TopOutputLogs/Anisimov.${analysis}.joblist /bin/bash > ${TopOutputLogs}/Anisimov.${analysis}.log" >> $analysisqsub
+echo "aprun -n $numnodes -N 1 -d $thr ~anisimov/scheduler/scheduler.x $TopOutputLogs/Anisimov.${analysis}.joblist /bin/bash -noexit > ${TopOutputLogs}/Anisimov.${analysis}.log" >> $analysisqsub
 echo -e "\n" >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.SUCCESS | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.FAILURE | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
