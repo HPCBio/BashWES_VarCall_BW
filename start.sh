@@ -56,7 +56,6 @@ sCN=$( cat $runfile | grep -w SAMPLECN | cut -d '=' -f2 )
 sLB=$( cat $runfile | grep -w SAMPLELB | cut -d '=' -f2 )
 dup_cutoff=$( cat $runfile | grep -w  DUP_CUTOFF | cut -d '=' -f2 )
 map_cutoff=$( cat $runfile | grep -w  MAP_CUTOFF | cut -d '=' -f2 )
-indices=$( cat $runfile | grep -w CHRNAMES | cut -d '=' -f2 | tr ':' ' ' )
 analysis=$( cat $runfile | grep -w ANALYSIS | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
 alignertool=$( cat $runfile | grep -w ALIGNERTOOL | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
 markduplicates=$( cat $runfile | grep -w MARKDUPLICATESTOOL | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
@@ -133,13 +132,6 @@ fi
 if [ `expr ${#dup_cutoff}` -lt 1 -o `expr ${#map_cutoff}` -lt 1 ]
 then
    MSG="Invalid value for MAP_CUTOFF=$map_cutoff or for DUP_CUTOFF=$dup_cutoff  in the runfile"
-   echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
-   exit 1;
-fi
-
-if [ `expr ${#indices}` -lt 1 ]
-then
-   MSG="Invalid value for CHRNAMES in the runfile"
    echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
    exit 1;
 fi
@@ -257,9 +249,13 @@ set -x
 
 if [ ! -d $outputdir ]; then
 	mkdir $outputdir
-#else
-	#rm -rf $outputdir/* #This would actually delete important data if the user did qc & trimming before running vriant calling (vc), so I'm commenting it! However, it might be needed to start fresh in the same folder if he is only doing vc. 
+else
+    rm -rf $outputdir/* 
+    #This would actually delete important data if the user did qc & trimming before running vriant calling (vc), 
+    # so it was commented out; but for ADSP on BW project looks like we are not doing QC or trimming, so leaving it in for reruns
 fi
+# setting the striping on output folder to ease the i/o bottlenecks during alignment
+lfs setstripe -c 3 $outputdir
 
 #setfacl -Rm   g::rwx $outputdir  #gives the group rwx permission, and to subdirectories
 #setfacl -Rm d:g::rwx $outputdir  #passes the permissions to newly created files/folders
