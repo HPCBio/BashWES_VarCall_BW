@@ -1,11 +1,11 @@
-January 2017
+July 2017
 
 1 Pipeline architecture and function
 ====================================
 
 This pipeline implements the [GATK's best practices](https://software.broadinstitute.org/gatk/best-practices/) for germline variant calling in Whole Exome Next Generation Sequencing datasets, given a cohort of samples.
 
-In its latest version, 3.6, the best practices include the stages shown in Figure \[1\] below, which are:
+In its latest version, 3.7, the best practices include the stages shown in Figure \[1\] below, which are:
 
 1.  Mapping to the reference genome
 2.  Marking duplicates
@@ -24,18 +24,18 @@ class="anchor"></span>![](./media/image05.png)
 
 Figure 1: Best Practices for Germline SNPs and Indels in Whole Genomes and Exomes
 
-Under the hood, this pipeline splits and merges files at different stages to achieve optimal usage of resources. This parallelization of data processing is shown in Figure \[2\] below:
+This pipeline follows GATK's best practices in removing the realignment step and proceeding with recalibration and variant calling. Output GVCFs are merged in the Joint Genotyping step to create an overal joint VCF of the samples. This workflow is shown in Figure \[2\] below:
 
-![](./media/image01.png)
+![](./media/bash_WES_workflow.png)
 
-Figure 2: Pipeline details. Note: the processing can be split by individual sequences in the reference FASTA file, which could be individual chromosomes, scaffolds, contigs, etc.
+Figure 2: Pipeline details.
 
 1.2. Workflow assumptions
 
-- Inputs are fastq not bam (the RESORTBAM os not active)
+- Inputs are fastq not bam (the RESORTBAM is not active)
 - Temporary files are not removed (the REMOVETEMPFILES is not active)
-- The AnisimovLauncher is not used in this workflow
-- To allow for adapter trimming using trimmomatic, the following variables are needed in the runfile: SAMPLEINFORMATION, OUTPUTDIR, TMPDIR, ADAPTERS, FASTQCDIR, TRIMMOMATICDIR, in addition to PBS torque parameters: PBSCORES, PBSNODES, PBSQUEUE, PBSWALLTIME and EMAIL
+- The AnisimovLauncher is used in this workflow
+- To allow for adapter trimming using trimmomatic, the following variables are needed in the runfile: SAMPLEINFORMATION, OUTPUTDIR, TMPDIR, ADAPTERS, FASTQCDIR, TRIMMOMATICDIR, in addition to PBS torque parameters: ALLOCATION, PBSCORES, PBSNODES, PBSQUEUE, PBSWALLTIME and EMAIL
 
 
 2 Dependencies
@@ -132,8 +132,10 @@ In a nutshell, the template below shows the various parameters and how they can 
   ADAPTERS=<path to the adapter file to be used with trimmomatic>
   REFGENOMEDIR=<path to the directory where all reference files and databases are stored>
   REFGENOME=<name of the reference genome file within REFGENOMEDIR. Example ucsc.hg19.fasta in the GATK bundle 2.8>
-  DBSNP=<name of the dbsnp file within REFGENOMEDIR. Example dbsnp\_138.hg19.vcf in the GATK bundle 2.8>
-  INDELDIR=<name of the directory within REFGENOMEDIR that contains a vcf file for each chromosome/contig specified by the CHRNAMES parameter. These files need to be named as: \*\${chr\_name}.vcf >
+  DBSNPDIR=<path to the directory where the dbSNP vcf file is stored>
+  DBSNP=<name of the dbsnp file within DBSNPDIR. Example dbsnp\_138.hg19.vcf in the GATK bundle 2.8>
+  INDELDIR=<path to the directory where indel vcf files are stored for recalibration>
+  INDELSLIST=<space-separated list of indel vcf files stored in INDELDIR>
   OMNI=<name of the omni variants file. Example: 1000G\_omni2.5.hg19.sites.vcf in the GATK bundle 2.8>
 
 # Example entries for tools’ path in biocluster
