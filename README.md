@@ -34,6 +34,7 @@ Figure 2: Pipeline details.
 
 - Inputs are fastq not bam (the RESORTBAM is not active)
 - Temporary files are not removed (the REMOVETEMPFILES is not active)
+- GVCF's are formatted as "*.g.vcf" to automatically indicate to GATK the correct variant indexing strategy
 - The AnisimovLauncher is used in this workflow
 - To allow for adapter trimming using trimmomatic, the following variables are needed in the runfile: SAMPLEINFORMATION, OUTPUTDIR, TMPDIR, ADAPTERS, FASTQCDIR, TRIMMOMATICDIR, in addition to PBS torque parameters: ALLOCATION, PBSCORES, PBSNODES, PBSQUEUE, PBSWALLTIME and EMAIL
 
@@ -182,11 +183,9 @@ described in section 2.3 for each case.
 2.5 Tasks management and naming conventions
 --------------------
  
-The pipeline breaks down the analysis stages on per sample and chromosome basis as is shown in Figure 2. It does so with the help of PBS torque resource manager to handle the various dependencies and scheduling of tasks. Accordingly, it keeps log files of each analysis stage in the logs output directory (Figure 3) with names that follows the convention:
+The pipeline breaks down the analysis stages on per sample basis as is shown in Figure 2. It does so with the help of PBS torque resource manager to handle the various dependencies and scheduling of tasks. Accordingly, it keeps log files of each analysis stage in the logs output directory (Figure 3) with names that follows the convention:
 
 -   `qsub.computation\_phase.sample\_name` = pbs torque script for a certain stage in the analysis, corresponding to a specific sample
-
--   `qsub.computation\_phase.sample\_name.chromosome` = pbs torque script for a certain stage in the analysis, corresponding to a specific sample's chromosome
 
 -   `log.computation\_phase.sample\_name.in` = Error log for a certainqsub job (including warnings, and execution status of corresponding scripts)
 
@@ -227,7 +226,7 @@ The remaining files are not used as part of the variant calling pipeline of Figu
 =========
 
 The results from a typical run of the pipeline are organized according to the hierarchy shown in Figure \[3\] below. Overall, the `DELIVERYFOLDER` contains the key summarizing files of the run (the cleaned up bams, gvcfs and final vcf from joint calling; in addition to the summary reports regarding the quality of the data, and copies of the
-`sampleinformation` and `runfile` files). Messages from compute nodes are saved and mailed out by the MOM node. Each sample also has its own directory that contains the files generated after each stage. File access permissions are opened to group as the files are created in the pipeline. In Figure \[3\], a color coding schema is employed to differentiate the files that would be generated according to how the user specifies the `ANALYSIS` parameter in the `runfile`.
+`sampleinformation` and `runfile` files). Delivery folder output is striped to efficiently store data across the cluster. Messages from compute nodes are saved and mailed out by the MOM node. Each sample also has its own directory that contains the files generated after each stage. File access permissions are opened to group as the files are created in the pipeline. In Figure \[3\], a color coding schema is employed to differentiate the files that would be generated according to how the user specifies the `ANALYSIS` parameter in the `runfile`.
 
 ![](./media/image04.png){width="6.692716535433071in"
 height="3.5694444444444446in"}
