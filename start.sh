@@ -484,9 +484,9 @@ echo -e "\n" >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.SUCCESS | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.FAILURE | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
 echo -e "\n" >> $analysisqsub
-cp ${outputdir}/logs/mail.${analysis}.SUCCESS $outputdir/$deliverydir/docs
-cp ${outputdir}/logs/mail.${analysis}.FAILURE $outputdir/$deliverydir/docs
-cp ${TopOutputLogs}/Anisimov.${analysis}.log $outputdir/$deliverydir/docs
+echo "cp ${outputdir}/logs/mail.${analysis}.SUCCESS $outputdir/$deliverydir/docs" >> $analysisqsub
+echo "cp ${outputdir}/logs/mail.${analysis}.FAILURE $outputdir/$deliverydir/docs" >> $analysisqsub
+echo "cp ${TopOutputLogs}/Anisimov.${analysis}.log $outputdir/$deliverydir/docs" >> $analysisqsub
 
 `chmod ug=rw ${TopOutputLogs}/Anisimov.${analysis}.log`
 `chmod ug=rw $analysisqsub`
