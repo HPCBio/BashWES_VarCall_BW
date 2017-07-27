@@ -388,8 +388,6 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
 	 -I $RealignDir/$recalibratedbam \
 	 --emitRefConfidence GVCF \
 	 -gt_mode DISCOVERY \
-	 -A Coverage -A FisherStrand -A StrandOddsRatio -A HaplotypeScore -A MappingQualityRankSumTest -A QualByDepth -A RMSMappingQuality -A ReadPosRankSumTest \
-	 -stand_call_conf 30 \
 	 --sample_ploidy $ploidy \
 	 -nt 1 -nct $thr \
 	 -L $intervals\
