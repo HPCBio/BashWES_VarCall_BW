@@ -302,6 +302,7 @@ echo "#PBS -A $allocation" >> $generic_qsub_header
 echo "#PBS -m ae" >> $generic_qsub_header
 echo "#PBS -M $email" >> $generic_qsub_header
 echo "#PBS -l walltime=${pbswalltime}" >> $generic_qsub_header
+echo "#PBS -l flags=commtransparent" >> $generic_qsub_header
 
 set +x
 echo -e "##### let's check that it worked and that the file was created                     ####" >&2
