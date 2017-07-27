@@ -470,12 +470,16 @@ numPE=$((inputsamplecounter+1))
 analysisqsub=$TopOutputLogs/qsub.${analysis}
 cat $generic_qsub_header > $analysisqsub
 
-echo "#PBS -N ${analysis}.${batchname}" >> $analysisqsub
+echo "#PBS -N ${batchname}.${analysis}" >> $analysisqsub
 echo "#PBS -o $TopOutputLogs/log.${analysis}.ou" >> $analysisqsub
 echo "#PBS -e $TopOutputLogs/log.${analysis}.er" >> $analysisqsub
 echo "#PBS -l nodes=${numnodes}:ppn=32" >> $analysisqsub
 echo -e "\n" >> $analysisqsub
+echo "$scriptdir/MonitorFileGrowth.sh ${outputdir} $TopOutputLogs ${batchname} &"  >> $analysisqsub
+echo "monitorPID=\`echo $!\`" >> $analysisqsub 
+echo -e "\n" >> $analysisqsub
 echo "aprun -n $numPE -N 2 -d $thr ~anisimov/scheduler/scheduler.x $TopOutputLogs/Anisimov.${analysis}.joblist /bin/bash -noexit > ${TopOutputLogs}/Anisimov.${analysis}.log" >> $analysisqsub
+echo "kill -9 ${monitorPID}" >> $analysisqsub
 echo -e "\n" >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.SUCCESS | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.FAILURE | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
