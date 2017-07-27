@@ -535,6 +535,8 @@ echo "#PBS -l nodes=1:ppn=32" >> $summaryqsub
 echo "#PBS -W depend=afterok:$alljobids " >> $summaryqsub
 echo -e "\n" >> $summaryqsub
 echo "aprun -n $nodes -d $thr $scriptdir/summary.sh $runfile $TopOutputLogs/log.summary.in $TopOutputLogs/log.summary.ou $TopOutputLogs/qsub.summary" >> $summaryqsub
+echo -e "\n" >> $summaryqsub
+echo "cat $outputdir/$deliverydir/docs/Summary.Report | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $summaryqsub
 `chmod ug=rw $summaryqsub`
 lastjobid=`qsub $summaryqsub`
 echo $lastjobid >> $TopOutputLogs/pbs.SUMMARY

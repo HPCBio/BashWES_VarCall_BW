@@ -59,7 +59,6 @@ listjobids=$( cat $outputdir/logs/pbs.* | sort | uniq | tr "\n" "\t" )
 LOGS="Results and execution logs can be found at $outputdir\n\nDeliverables are located at $outputdir/$deliverydir\n\nJOBIDS\n\n$listjobids\n\nThis jobid:${PBS_JOBID}\n\n"
 echo -e "\n\n$LOGS" >> $outputdir/$deliverydir/docs/Summary.Report
 
-cat  $outputdir/$deliverydir/docs/Summary.Report | mail -s "[Task #${reportticket}]" "$redmine,$email"
 
 chmod -R g+r $outputdir
 set +x
