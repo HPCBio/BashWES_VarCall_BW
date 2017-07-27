@@ -24,69 +24,42 @@ sampleinfo=$( cat $runfile | grep -w SAMPLEINFORMATION | cut -d '=' -f2 )
 reportticket=$( cat $runfile | grep -w REPORTTICKET | cut -d '=' -f2 )
 deliverydir=$( cat $runfile | grep -w DELIVERYFOLDER | cut -d '=' -f2 )
 summaryok="YES"
-samplesProcessed=""
-set +x
-echo -e "\n\n############################################################################################################"
-echo -e "###########                        SANITY   CHECK   HERE                                  ##################"
-echo -e "############################################################################################################\n\n"
-set -x 
-if [ ! -s $outputdir/$deliverydir/docs/Summary.Report ]
-then 
-    MSG="$outputdir/$deliverydir/docs/Summary.Report  file not found"
-    echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"                     
-    exit 1                
+
+if [ ! -s ${outputdir}/logs/mail.${analysis}.FAILURE ]
+then
+    MSG="Variant calling workflow run by username: $USER finished successfully at: "$( echo `date` )
+    echo -e ${MSG}  >> $outputdir/$deliverydir/docs/Summary.Report
+else
+    MSG="Variant calling workflow run by username: $USER finished with FAILUERS at: "$( echo `date` )
+    echo -e ${MSG}  >> $outputdir/$deliverydir/docs/Summary.Report
+fi
+qcfails=`grep FAIL ${outputdir}/delivery/docs/QC_test_results.txt | wc -l`
+qcwarns=`grep WARN ${outputdir}/delivery/docs/QC_test_results.txt | wc -l`
+if [ $qcfails -gt 0  ]
+then
+    echo -e "QC HAD FAILURES" >> $outputdir/$deliverydir/docs/Summary.Report
+    summaryok="QC"
+fi
+if [ $qcwarns -gt 0  ]
+then
+    echo -e "QC HAD WARNINGS" >> $outputdir/$deliverydir/docs/Summary.Report
+    summaryok="QC"
 fi
 
-while read sampleLine
-do
-    if [ `expr ${#sampleLine}` -lt 1 ]
-    then
-	set +x
-	echo -e "\n\n############################################################################################################"
-	echo -e "##############                              skipping empty line        #####################################"
-	echo -e "############################################################################################################\n\n"
-	set -x 
-    else
-	set +x
-	echo -e "\n\n############################################################################################################"
-	echo -e "##############                      Processing next line $sampleLine   #####################################"
-	echo -e "############################################################################################################\n\n"
-	set -x 
-	sample=$( echo "$sampleLine" | cut -d ' ' -f 1 ) 
-	set +x
-	echo -e "\n\n############################################################################################################"
-	echo -e "############## checking that there are results available for sample $sample in $outputdir/$sample/ #########"
-	echo -e "############################################################################################################\n\n"
-	set -x 
-	if [ -s $outputdir/$sample ]
-	then
-	    echo -e "$sample\tResults folder:\t$outputdir/$sample" >> $samplesProcessed
-	    echo -e "########## All results seem to be OK $outputdir/$sample"
-	else
-	    echo -e "$sample\tResults folder:\tEXECUTION FAILED TO PRODUCE SOME RESULTS" >> $samplesProcessed 
-	    echo -e "########## Some results seem to be MISSING $outputdir/$sample"                    
-	    summaryok="NO"
-	fi
-   fi 
-done <  $sampleinfo                
+
 
 set +x
-echo -e "\n\n############################################################################################################"
-echo -e "####   now putting together the second part of the Summary.Report file with the list of jobs executed   ####"
-echo -e "############################################################################################################\n\n"
+echo -e "\n\n##################################################################"
+echo -e "####   Now putting together the second part of the Summary.   ####"
+echo -e "####   Report file with the list of jobs executed             ####"
+echo -e "##################################################################\n\n"
 set -x 
 listjobids=$( cat $outputdir/logs/pbs.* | sort | uniq | tr "\n" "\t" )
 
-if [ $summaryok == "YES" ]
-then
-    MSG="Variant calling workflow run by username: $USER finished with ALL  jobs with exit code 0 at: "$( echo `date` )	
-else 
-    MSG="Variant calling workflow run by username: $USER finished with SOME  jobs with exit code 0 at: "$( echo `date` )
-fi
-
 LOGS="Results and execution logs can be found at $outputdir\n\nDeliverables are located at $outputdir/$deliverydir\n\nJOBIDS\n\n$listjobids\n\nThis jobid:${PBS_JOBID}\n\n"
-echo -e "$MSG\n\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
-echo -e "$MSG\n\n$LOGS" >> $outputdir/$deliverydir/docs/Summary.Report
+echo -e "\n\n$LOGS" >> $outputdir/$deliverydir/docs/Summary.Report
+
+cat  $outputdir/$deliverydir/docs/Summary.Report | mail -s "[Task #${reportticket}]" "$redmine,$email"
 
 chmod -R g+r $outputdir
 set +x

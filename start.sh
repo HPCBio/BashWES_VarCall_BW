@@ -255,7 +255,8 @@ else
     # so it was commented out; but for ADSP on BW project looks like we are not doing QC or trimming, so leaving it in for reruns
 fi
 # setting the striping on output folder to ease the i/o bottlenecks during alignment
-lfs setstripe -c 3 $outputdir
+# decided not to do b/c files are small and lots of them/lots of samples in ADSP projects
+#lfs setstripe -c 3 $outputdir
 
 #setfacl -Rm   g::rwx $outputdir  #gives the group rwx permission, and to subdirectories
 #setfacl -Rm d:g::rwx $outputdir  #passes the permissions to newly created files/folders
@@ -325,7 +326,7 @@ set -x
 
 
 MSG="Variant calling workflow  started by username:$USER at: "$( echo `date` )
-LOGS="Documentation about this run such as config files and results of QC tests will be placed in this folder:\n\n$outputdir/$deliverydir/docs/ \n\n"
+LOGS="Documentation about this run such as config files and results of QC tests will be placed in this folder:\n$outputdir/$deliverydir/docs/ \n\n"
 echo -e "$MSG\n\nDetails:\n\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
 echo -e "$MSG\n\nDetails:\n\n$LOGS" >> $outputdir/$deliverydir/docs/Summary.Report
 
@@ -407,7 +408,6 @@ do
 	if [ -d $outputdir/${sample} ]
 	then
 	     ### $outputdir/$sample already exists. Resetting it now. 
-	     ### Maybe not. We already run trimming and we want to keep those results
 	     ### rm -R $outputdir/$sample
 	     mkdir -p $outputdir/${sample}/align
 	     mkdir -p $outputdir/${sample}/realrecal
@@ -474,6 +474,11 @@ echo "aprun -n $numnodes -N 1 -d $thr ~anisimov/scheduler/scheduler.x $TopOutput
 echo -e "\n" >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.SUCCESS | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.FAILURE | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
+echo -e "\n" >> $analysisqsub
+cp ${outputdir}/logs/mail.${analysis}.SUCCESS $outputdir/$deliverydir/docs
+cp ${outputdir}/logs/mail.${analysis}.FAILURE $outputdir/$deliverydir/docs
+cp ${TopOutputLogs}/Anisimov.${analysis}.log $outputdir/$deliverydir/docs
+
 `chmod ug=rw ${TopOutputLogs}/Anisimov.${analysis}.log`
 `chmod ug=rw $analysisqsub`
 analysisjobid=`qsub $analysisqsub` 

@@ -81,7 +81,9 @@ RealignDir=$outputdir/realign
 VarcallDir=$outputdir/variant
 DeliveryDir=$rootdir/$deliverydir/$SampleName
 
-qcfile=$rootdir/$deliverydir/docs/QC_test_results.txt            # name of the txt file with all QC test results
+qcfile=$rootdir/$deliverydir/docs/QC_test_results.txt            # name of the txt file with all QC test results; already truncated in start.sh
+sampleqcfile=$rootdir/$deliverydir/${SampleName}/${SampleName}_QC_test_results.txt            # name of the txt file with sample's QC test results
+truncate -s 0 ${sampleqcfile}
 alignedbam=${SampleName}.nodups.bam                              # name of the aligned bam
 alignedsortedbam=${SampleName}.nodups.sorted.bam                 # name of the aligned-sorted bam
 dedupbam=${SampleName}.wdups.bam                                 # name of the deduplicated bam
@@ -230,7 +232,6 @@ then
 	    echo `date`
 	    if [ $numAlignments -eq 0 ]
 	    then
-	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tbwa mem command did not produce alignments for $AlignDir/$dedupbam\n" >> $qcfile	    
 		MSG="bwa mem command did not produce alignments for $AlignDir/$dedupbam"
                 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
@@ -279,7 +280,6 @@ then
 	    echo `date`
 	    if [ $numAlignments -eq 0 ]
 	    then
-	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tnovosort command did not produce a file for $AlignDir/$dedupsortedbam\n" >> $qcfile	    
 		MSG="novosort command did not produce a file for $AlignDir/$dedupsortedbam"
                 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
@@ -360,7 +360,6 @@ then
 	    echo `date`
 	    if [ $numAlignments -eq 0 ]
 	    then
-	        echo -e "${SampleName}\tALIGNMENT\tFAIL\taligner command did not produce alignments for $AlignDir/$alignedbam\n" >> $qcfile	    
 		MSG="aligner command did not produce alignments for $AlignDir/$alignedbam"
                 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
@@ -409,7 +408,6 @@ then
 	    echo `date`
 	    if [ $numAlignments -eq 0 ]
 	    then
-	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tnovosort command did not produce a file for $AlignDir/$dedupsortedbam\n" >> $qcfile	    
 		MSG="novosort command did not produce a file for $AlignDir/$dedupsortedbam"
                 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
@@ -467,7 +465,6 @@ then
 	    echo `date`
 	    if [ $numAlignments -eq 0 ]
 	    then
-	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tbwa mem command did not produce alignments for $AlignDir/$alignedbam\n" >> $qcfile	    
 		MSG="bwa mem command did not produce alignments for $AlignDir/$alignedbam"
                 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
@@ -541,7 +538,6 @@ then
 	    echo `date`
 	    if [ $numAlignments -eq 0 ]
 	    then
-	        echo -e "${SampleName}\tALIGNMENT\tFAIL\tpicard command did not produce a file for $AlignDir/$dedupsortedbam\n" >> $qcfile	    
 		MSG="novosort command did not produce a file for $AlignDir/$dedupsortedbam"
                 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
@@ -613,7 +609,6 @@ set -x
 
 if [ ! -s $flagstats ]
 then
-	 echo -e "${SampleName}\tQCT/EST\tFAIL\tsamtools/samtools flagstat command produced an empty file $flagstats\n" >> $qcfile
 	 MSG="samtools flagstat command produced an empty file  $flagstats"
          echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	 exit $exitcode;
@@ -695,20 +690,23 @@ set -x
 
 if [ $perc_dup -lt $dup_cutoff ]
 then
-	echo -e "$#####  sample passed first filter percent_duplicates with value $perc_dup, maximum cutoff is $dup_cutoff"
-	
-	if [ $perc_mapped -gt $map_cutoff ]
-	then
-	        echo -e "##### $sample passed second filter map_cutoff with value $perc_mapped, minimum cutoff is $map_cutoff"	
-	        echo -e "${SampleName}\tQCTEST\tPASS\trule1 ok: percent_duplication=$perc_dup <? duplication_cutoff=$dup_cutoff\trule2 ok: percent_mapped=$perc_mapped >? mapping_cutoff=$map_cutoff" >> $qcfile
-	else
-	        echo -e "##### $sample DID NOT pass second filter map_cutoff with value $perc_mapped, minimum cutoff is $map_cutoff"	
-	        echo -e "${SampleName}\tQCTEST\tFAIL\trule1 ok: percent_duplication=$perc_dup <? duplication_cutoff=$dup_cutoff\trule2 notok: percent_mapped=$perc_mapped >? mapping_cutoff=$map_cutoff" >> $qcfile	          
-	fi
+	echo -e "${SampleName} PASSED filter percent_duplicates with value $perc_dup, maximum cutoff is $dup_cutoff" >> $qcfile
+	echo -e "${SampleName} PASSED filter percent_duplicates with value $perc_dup, maximum cutoff is $dup_cutoff" >> $sampleqcfile
 else
-	echo -e "$#####  sample DID NOT pass first filter percent_duplicates with value $perc_dup, maximum cutoff is $dup_cutoff"
-	echo -e "${SampleName}\tQCTEST\tFAIL\trule1 not ok: percent_duplication=$perc_dup <? duplication_cutoff=$dup_cutoff\trule2 not evaluated: percent_mapped=$perc_mapped >? mapping_cutoff=$map_cutoff" >> $qcfile
+        echo -e "${SampleName} FAILED filter percent_duplicates with value $perc_dup, maximum cutoff is $dup_cutoff" >> $qcfile
+        echo -e "${SampleName} FAILED filter percent_duplicates with value $perc_dup, maximum cutoff is $dup_cutoff" >> $sampleqcfile
 fi
+if [ $perc_mapped -gt $map_cutoff ]
+then
+        echo -e "${SampleName} PASSED filter map_cutoff with value $perc_mapped, minimum cutoff is $map_cutoff"	>> $qcfile
+        echo -e "${SampleName} PASSED filter map_cutoff with value $perc_mapped, minimum cutoff is $map_cutoff"	>> $sampleqcfile
+else
+        echo -e "${SampleName} FAILED filter map_cutoff with value $perc_mapped, minimum cutoff is $map_cutoff" >> $qcfile
+        echo -e "${SampleName} FAILED filter map_cutoff with value $perc_mapped, minimum cutoff is $map_cutoff" >> $sampleqcfile
+fi
+
+
+
 
 set +x
 echo -e "\n\n##################################################################################" >&2

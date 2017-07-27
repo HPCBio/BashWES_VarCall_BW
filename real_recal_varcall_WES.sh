@@ -75,6 +75,7 @@ VarcallDir=$outputdir/variant
 DeliveryDir=$rootdir/$deliverydir/$SampleName
 
 qcfile=$rootdir/$deliverydir/docs/QC_test_results.txt       # name of the txt file with all QC test results
+sampleqcfile=$rootdir/$deliverydir/${SampleName}/${SampleName}_QC_test_results.txt            # name of the txt file with sample's QC test results; truncated in align_dedup
 inputbam=$AlignDir/${SampleName}.wdups.sorted.bam           # name of the bam file that align-dedup produced
 dedupsortedbam=${SampleName}.wdups.sorted.bam               # name of the aligned file 
 realignedbam=${SampleName}.realigned.bam                    # name of the realigned file
@@ -218,7 +219,9 @@ then
 
 	if [ ! -s ${SampleName}.realignTargetCreator.intervals ]
         then
-       		echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qcfile
+       		MSG="REALIGNMENT\tWARNING\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd"
+                echo -e "$MSG" >> $qcfile
+                echo -e "$MSG" >> $sampleqcfile
 	else 
 		set +x
 		echo -e "\n\n##################################################################################" 
@@ -254,7 +257,6 @@ then
 	    		numAlignments=$( $samtoolsdir/samtools view -c $realignedbam ) 
 	    		echo `date`
 	    		if [ $numAlignments -eq 0 ]; then
-				echo -e "${SampleName}\tREALIGNMENT\tFAIL\tGATK IndelRealigner command did not produce alignments for $realignedbam\n" >> $qcfile	    
 				MSG="GATK IndelRealigner command did not produce alignments for $realignedbam"
                                 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 				exit 1;
@@ -300,6 +302,7 @@ fi
 if [ ! -s $SampleName.recal_report.grp ]
 then
 	echo -e "${SampleName}\tRECALIBRATION\tWARN\t$SampleName.recal_report.grp is an empty file. Skipping recalibration cmd\n" >> $qcfile
+	echo -e "${SampleName}\tRECALIBRATION\tWARN\t$SampleName.recal_report.grp is an empty file. Skipping recalibration cmd\n" >> $sampleqcfile
         ln -s $dedupsortedbam $RealignDir/$recalibratedbam
 else
 	set +x 
@@ -333,7 +336,6 @@ else
 	    echo `date`
 	    if [ $numAlignments -eq 0 ]
 	    then
-                echo -e "${SampleName}\tRECALIBRATION\tFAIL\tBQSR Recalibrator command did not produce alignments for $recalibratedbam\n" >> $qcfile	    
 		MSG="GATK BQSR Recalibrator command did not produce alignments for $recalibratedbam"
                 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 		exit 1;
@@ -405,7 +407,6 @@ then
 fi
 if [ ! -s $rawvariant ]
 then
-	echo -e "${SampleName}\tVCALL\tFAIL\tHaplotypeCaller command did not produce results for $rawvariant\n" >> $qcfile	    
 	MSG="GATK HaplotypeCaller command did not produce results for $rawvariant"
         echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit 1;
@@ -426,10 +427,10 @@ echo -e "#######################################################################
 set -x
 echo `date`
  
-#cp $RealignDir/${SampleName}.$chr.recalibrated.bam   $DeliveryDir
+## put files into delivery folder
+cp $RealignDir/$recalibratedbam $DeliveryDir
+cp $rawvariant $DeliveryDir
 
-# we will merge all variant files for this sample and copy that file to delivery
-#cp $VarcallDir/rawvariant=${SampleName}.$chr.raw.g.vcf $DeliveryDir  
 set +x
 echo `date`
 echo -e "\n\n##################################################################################"
