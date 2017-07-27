@@ -459,8 +459,12 @@ echo -e "#####   Now create the Anisimov bundle for analyzing all samples   ####
 echo -e "#######################################################################\n\n" >&2
 set -x
 
-# calculate the number of nodes needed, to be numbers of samples +1
-numnodes=$((inputsamplecounter+1))
+# calculate the number of nodes needed, to be numbers of samples divided by 2 + 1
+# divide by 2 because we will put two samples per node
+# and +1 for launcher or an odd sample
+numnodes=$((inputsamplecounter/2+1))
+# number of processing elements for aprun = num samples + 1 for launcher
+numPE=$((inputsamplecounter+1))
 
 #form qsub
 analysisqsub=$TopOutputLogs/qsub.${analysis}
@@ -469,9 +473,9 @@ cat $generic_qsub_header > $analysisqsub
 echo "#PBS -N ${analysis}.${batchname}" >> $analysisqsub
 echo "#PBS -o $TopOutputLogs/log.${analysis}.ou" >> $analysisqsub
 echo "#PBS -e $TopOutputLogs/log.${analysis}.er" >> $analysisqsub
-echo "#PBS -l nodes=${numnodes}:ppn=$thr" >> $analysisqsub
+echo "#PBS -l nodes=${numnodes}:ppn=32" >> $analysisqsub
 echo -e "\n" >> $analysisqsub
-echo "aprun -n $numnodes -N 1 -d $thr ~anisimov/scheduler/scheduler.x $TopOutputLogs/Anisimov.${analysis}.joblist /bin/bash -noexit > ${TopOutputLogs}/Anisimov.${analysis}.log" >> $analysisqsub
+echo "aprun -n $numPE -N 2 -d $thr ~anisimov/scheduler/scheduler.x $TopOutputLogs/Anisimov.${analysis}.joblist /bin/bash -noexit > ${TopOutputLogs}/Anisimov.${analysis}.log" >> $analysisqsub
 echo -e "\n" >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.SUCCESS | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
 echo "cat ${outputdir}/logs/mail.${analysis}.FAILURE | mail -s \"[Task #${reportticket}]\" \"$redmine,$email\" " >> $analysisqsub
@@ -523,7 +527,7 @@ cat $generic_qsub_header > $summaryqsub
 echo "#PBS -N Summary_vcall" >> $summaryqsub
 echo "#PBS -o $TopOutputLogs/log.summary.ou" >> $summaryqsub
 echo "#PBS -e $TopOutputLogs/log.summary.in" >> $summaryqsub
-echo "#PBS -l nodes=1:ppn=$thr" >> $summaryqsub
+echo "#PBS -l nodes=1:ppn=32" >> $summaryqsub
 echo "#PBS -W depend=afterok:$alljobids " >> $summaryqsub
 echo -e "\n" >> $summaryqsub
 echo "aprun -n $nodes -d $thr $scriptdir/summary.sh $runfile $TopOutputLogs/log.summary.in $TopOutputLogs/log.summary.ou $TopOutputLogs/qsub.summary" >> $summaryqsub
