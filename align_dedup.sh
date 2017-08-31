@@ -252,7 +252,7 @@ then
 	echo -e "##################################################################################\n\n" >&2
 	set -x
 
-	$novocraftdir/novosort --index --tmpdir $tmpdir --threads $thr --compression 1 -o $dedupsortedbam $dedupbam
+	$novocraftdir/novosort --index --tmpdir $tmpdir --threads $thr --ram 20000000000 --compression 1 -o $dedupsortedbam $dedupbam
 	exitcode=$?
         `chmod 660 ${dedupsortedbam}*`
 	echo `date`
@@ -379,7 +379,7 @@ then
 	echo -e "#####################################################################################\n\n" >&2
 	set -x
 
-	$novocraftdir/novosort -r "${rgheader}" --markDuplicates  -t $tmpdir -c $thr -i -o $dedupsortedbam $alignedbam
+	$novocraftdir/novosort -r "${rgheader}" --markDuplicates  -t $tmpdir -c $thr -i --ram 20000000000 -o $dedupsortedbam $alignedbam
 	exitcode=$?
         `chmod 660 ${dedupsortedbam}*`
 	echo `date`
@@ -437,16 +437,38 @@ then
 	echo -e "###############################################################################\n\n" >&2
 	set -x 	
 
-	$bwamemdir/bwa mem $bwamem_parms -t $thr -R "${rgheader}" $bwa_index $R1 $R2 | $samtoolsdir/samtools view -@ $thr -bSu -> $alignedbam 
-	exitcode=$?
+
+
+        if [ $alignertool== "BWA" ]
+        then
+
+   	   $bwamemdir/bwa mem $bwamem_parms -t $thr -R "${rgheader}" $bwa_index $R1 $R2 | $samtoolsdir/samtools view -@ $thr -bSu -> $alignedbam 
+	   exitcode=$?
+	   echo `date`
+	   if [ $exitcode -ne 0 ]
+	   then
+	       MSG="alignment step  failed for sample $SampleName exitcode=$exitcode."
+	       echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+	       exit $exitcode;
+	   fi   
+        elif [ $alignertool == "NOVOALIGN" ]
+        then
+           $novocraftdir/novoalign $novoalign_parms  -c $thr -d ${novoalign_index} -f $R1 $R2 -o SAM | $samtoolsdir/samtools view -@ $thr -bS - > $alignedbam
+           exitcode=$?
+           echo `date`
+           if [ $exitcode -ne 0 ]
+           then
+               MSG="alignment step  failed for sample $SampleName exitcode=$exitcode."
+               echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
+               exit $exitcode;
+           fi
+        fi
         `chmod 660 ${alignedbam}*`
-	echo `date`
-	if [ $exitcode -ne 0 ]
-	then
-	    MSG="alignment step  failed for sample $SampleName exitcode=$exitcode."
-	    echo -e "program=$scriptfile stopped at line=$LINENO.\nReason=$MSG\n$LOGS" | mail -s "[Task #${reportticket}]" "$redmine,$email"
-	    exit $exitcode;
-	fi   
+
+
+
+
+
 	set +x
 	echo -e "\n\n######################################################################################" >&2	     
 	echo -e "#############  step two:making sure that a file was produced with alignments     #####" >&2
@@ -484,7 +506,7 @@ then
 	echo -e "###################################################################################\n\n" >&2
 	set -x
 
-	$novocraftdir/novosort -t $tmpdir -c ${thr} -i -o $alignedsortedbam $alignedbam
+	$novocraftdir/novosort -t $tmpdir -c ${thr} --ram 20000000000 -i -o $alignedsortedbam $alignedbam
 	exitcode=$?
         `chmod 660 ${alignedsortedbam}*`
 	echo `date`

@@ -463,6 +463,9 @@ set -x
 # divide by 2 because we will put two samples per node
 # and +1 for launcher or an odd sample
 numnodes=$((inputsamplecounter/2+1))
+# if batch has large files, then use one sample per node
+#numnodes=$((inputsamplecounter+1))
+
 # number of processing elements for aprun = num samples + 1 for launcher
 numPE=$((inputsamplecounter+1))
 

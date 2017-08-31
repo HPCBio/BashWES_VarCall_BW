@@ -27,17 +27,17 @@ summaryok="YES"
 
 if [ ! -s ${outputdir}/logs/mail.${analysis}.FAILURE ]
 then
-    MSG="Variant calling workflow run by username: $USER finished successfully at: "$( echo `date` )
+    MSG="Variant calling workflow run by username: ${USER}\nfinished successfully at: "$( echo `date` )
     echo -e ${MSG}  >> $outputdir/$deliverydir/docs/Summary.Report
 else
-    MSG="Variant calling workflow run by username: $USER finished with FAILUERS at: "$( echo `date` )
+    MSG="Variant calling workflow run by username: ${USER}\nfinished with FAILUERS at: "$( echo `date` )
     echo -e ${MSG}  >> $outputdir/$deliverydir/docs/Summary.Report
 fi
 qcfails=`grep FAIL ${outputdir}/delivery/docs/QC_test_results.txt | wc -l`
 qcwarns=`grep WARN ${outputdir}/delivery/docs/QC_test_results.txt | wc -l`
 if [ $qcfails -gt 0  ]
 then
-    echo -e "QC HAD FAILURES" >> $outputdir/$deliverydir/docs/Summary.Report
+    echo -e "\nQC HAD FAILURES" >> $outputdir/$deliverydir/docs/Summary.Report
     summaryok="QC"
 fi
 if [ $qcwarns -gt 0  ]

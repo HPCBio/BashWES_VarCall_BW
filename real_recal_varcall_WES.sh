@@ -428,6 +428,7 @@ echo `date`
 ## put files into delivery folder
 cp $RealignDir/$recalibratedbam $DeliveryDir
 cp $rawvariant $DeliveryDir
+cp $rawvariant.idx $DeliveryDir
 
 set +x
 echo `date`
