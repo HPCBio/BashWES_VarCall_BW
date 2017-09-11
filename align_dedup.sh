@@ -314,7 +314,7 @@ then
 	set -x 
         
 
-        if [ $alignertool== "BWA" ]
+        if [ $alignertool== "BWAMEM" ]
         then
 
 
@@ -439,7 +439,7 @@ then
 
 
 
-        if [ $alignertool== "BWA" ]
+        if [ $alignertool == "BWAMEM" ]
         then
 
    	   $bwamemdir/bwa mem $bwamem_parms -t $thr -R "${rgheader}" $bwa_index $R1 $R2 | $samtoolsdir/samtools view -@ $thr -bSu -> $alignedbam 
