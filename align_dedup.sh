@@ -330,7 +330,7 @@ then
 	   fi
         elif [ $alignertool == "NOVOALIGN" ]
 	then
-           $novocraftdir/novoalign $novoalign_parms  -c $thr -d ${novoalign_index} -f $R1 $R2 -o SAM | $samtoolsdir/samtools view -@ $thr -bS - > $alignedbam
+           $novocraftdir/novoalign $novoalign_parms  -c $thr -d ${novoalign_index} -f $R1 $R2 -o SAM $rgheader | $samtoolsdir/samtools view -@ $thr -bS - > $alignedbam
            exitcode=$?
            `chmod 660 ${alignedbam}*`
            echo `date`
@@ -453,7 +453,7 @@ then
 	   fi   
         elif [ $alignertool == "NOVOALIGN" ]
         then
-           $novocraftdir/novoalign $novoalign_parms  -c $thr -d ${novoalign_index} -f $R1 $R2 -o SAM | $samtoolsdir/samtools view -@ $thr -bS - > $alignedbam
+           $novocraftdir/novoalign $novoalign_parms  -c $thr -d ${novoalign_index} -f $R1 $R2 -o SAM $rgheader | $samtoolsdir/samtools view -@ $thr -bS - > $alignedbam
            exitcode=$?
            echo `date`
            if [ $exitcode -ne 0 ]
